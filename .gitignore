@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+runs/
+data/tokens_*.npy
+data/train.txt
+data/holdout.txt
+*.pt

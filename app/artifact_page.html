@@ -1,0 +1,416 @@
+<title>Parsimony</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#10131C; --panel:#171B27; --panel-2:#1E2331; --line:#2A3142;
+  --text:#E6E8F0; --muted:#8A92A8; --dim:#5C6478;
+  --embed:#6B7A99;      /* cold: the lookup table */
+  --compute:#E8A33D;    /* warm: live capacity */
+  --measure:#4FB3A5;    /* measured results */
+  --maxw:1080px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ink); color:var(--text);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 28px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header{padding:56px 0 0}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--dim);
+}
+h1{
+  font-size:clamp(40px,7vw,68px); line-height:.98; letter-spacing:-.035em;
+  font-weight:700; margin:16px 0 0; text-wrap:balance;
+}
+.thesis{
+  margin:22px 0 0; max-width:62ch; font-size:19px; color:#C3C9D8; line-height:1.55;
+}
+.thesis strong{color:var(--text); font-weight:600}
+.rule{height:1px; background:var(--line); margin:44px 0}
+
+/* ---------- instrument ---------- */
+.instrument{background:var(--panel); border:1px solid var(--line); border-radius:4px; overflow:hidden}
+.inst-head{
+  display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+  padding:16px 22px; border-bottom:1px solid var(--line); background:var(--panel-2); flex-wrap:wrap;
+}
+.inst-title{font-size:13px; font-weight:600; letter-spacing:.02em}
+.inst-sub{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted)}
+.inst-body{padding:26px 22px 28px}
+
+.sliderow{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:26px}
+label.slab{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; flex:1; min-width:220px; height:3px;
+  background:linear-gradient(90deg,var(--embed),var(--compute)); border-radius:2px; outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+  background:var(--text); border:3px solid var(--ink); cursor:pointer;
+  box-shadow:0 0 0 1px var(--line);
+}
+input[type=range]::-moz-range-thumb{
+  width:18px; height:18px; border-radius:50%; background:var(--text);
+  border:3px solid var(--ink); cursor:pointer;
+}
+input[type=range]:focus-visible{box-shadow:0 0 0 3px rgba(232,163,61,.45)}
+.vocabval{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; min-width:5.5ch}
+.preset{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted);
+  background:transparent; border:1px solid var(--line); border-radius:3px;
+  padding:5px 9px; cursor:pointer;
+}
+.preset:hover{border-color:var(--compute); color:var(--text)}
+.preset:focus-visible{outline:2px solid var(--compute); outline-offset:1px}
+
+/* allocation bar */
+.bar{display:flex; height:46px; border-radius:3px; overflow:hidden; border:1px solid var(--line)}
+.seg{display:flex; align-items:center; padding:0 12px; font-family:"IBM Plex Mono",monospace;
+     font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden;
+     transition:width .28s cubic-bezier(.4,0,.2,1)}
+.seg-embed{background:var(--embed); color:#0E1119}
+.seg-compute{background:var(--compute); color:#2A1B05}
+.barkey{display:flex; gap:22px; margin-top:11px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); flex-wrap:wrap}
+.key{display:flex; align-items:center; gap:7px}
+.swatch{width:10px; height:10px; border-radius:2px; flex:none}
+
+/* layer stack */
+.stackwrap{margin-top:30px}
+.stacklab{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);
+          letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px}
+.stack{display:flex; flex-wrap:wrap; gap:5px; align-items:flex-end; min-height:52px}
+.layer{
+  width:26px; height:26px; background:var(--compute); border-radius:2px;
+  animation:pop .22s cubic-bezier(.34,1.4,.64,1) both;
+}
+.layer.ghost{background:transparent; border:1px dashed var(--line)}
+@keyframes pop{from{transform:scale(.4); opacity:0} to{transform:scale(1); opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .layer{animation:none}
+  .seg{transition:none}
+}
+
+/* readout grid */
+.readout{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:3px; margin-top:30px; overflow:hidden;
+}
+.cell{background:var(--panel); padding:14px 16px}
+.cell dt{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em;
+         text-transform:uppercase; color:var(--dim); margin:0 0 5px}
+.cell dd{margin:0; font-family:"IBM Plex Mono",monospace; font-size:19px; font-weight:600}
+.cell dd small{font-size:12px; font-weight:400; color:var(--muted)}
+
+/* ---------- sections ---------- */
+section{margin:64px 0 0}
+h2{font-size:15px; font-weight:600; letter-spacing:.02em; margin:0 0 6px}
+.sectnote{color:var(--muted); font-size:15px; max-width:64ch; margin:0 0 22px}
+
+table{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-size:13px}
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:3px}
+th,td{padding:10px 14px; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{background:var(--panel-2); color:var(--muted); font-weight:500;
+         font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid var(--line)}
+tbody tr{background:var(--panel)}
+tbody tr+tr td{border-top:1px solid var(--line)}
+td.best{color:var(--measure); font-weight:600}
+.win{color:var(--measure)}
+
+.chartbox{background:var(--panel); border:1px solid var(--line); border-radius:3px; padding:20px; margin-top:18px}
+.note{
+  border-left:2px solid var(--measure); padding:2px 0 2px 16px; margin:22px 0 0;
+  color:#C3C9D8; font-size:15px; max-width:66ch;
+}
+.note b{color:var(--text)}
+code{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--panel-2);
+     padding:1.5px 5px; border-radius:2px; color:#D8DEEE}
+footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
+       color:var(--dim); font-size:12.5px; font-family:"IBM Plex Mono",monospace}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">GIBC V2 &middot; Track 01 &middot; foundational LLM</div>
+  <h1>Half your model is a<br>dictionary. A third<br>is the right answer.</h1>
+  <p class="thesis">
+    The 50M parameter cap counts token embeddings. That turns vocabulary size from a
+    preprocessing detail into a <strong>capacity allocation decision</strong>: with GPT&#8209;2&rsquo;s
+    50,257-token vocabulary, <strong>54% of the entire budget is a lookup table</strong>, leaving room
+    for just 7 transformer layers. An 8k vocabulary buys 14 layers for the same parameters.
+    So we measured which is actually better &mdash; and the answer splits in two.
+  </p>
+  <p class="thesis" style="margin-top:14px">
+    <strong>Depth buys compression; vocabulary buys reasoning</strong> &mdash; and at a fixed 50M
+    budget they pull against each other. Neither extreme wins. In our sweep the best model spends
+    about <strong>a third of the budget on embeddings</strong>, keeping 84% of the best compression
+    while topping the reasoning score. The lookup table is not waste, and it is not free.
+  </p>
+</header>
+
+<div class="rule"></div>
+
+<div class="instrument">
+  <div class="inst-head">
+    <span class="inst-title">Parameter budget allocator</span>
+    <span class="inst-sub" id="cfgline">d_model 512 &middot; SwiGLU &middot; tied embeddings</span>
+  </div>
+  <div class="inst-body">
+    <div class="sliderow">
+      <label class="slab" for="vocab">Vocabulary</label>
+      <input type="range" id="vocab" min="0" max="100" value="30" step="1" aria-describedby="vocabval">
+      <span class="vocabval mono" id="vocabval">8,192</span>
+      <button class="preset" data-v="8192">custom BPE 8k</button>
+      <button class="preset" data-v="32000">Llama 32k</button>
+      <button class="preset" data-v="50257">GPT-2 50k</button>
+    </div>
+
+    <div class="bar" role="img" aria-label="Parameter budget split between embedding table and transformer layers">
+      <div class="seg seg-embed" id="segEmbed"></div>
+      <div class="seg seg-compute" id="segCompute"></div>
+    </div>
+    <div class="barkey">
+      <span class="key"><span class="swatch" style="background:var(--embed)"></span>embedding table &mdash; a lookup, no computation</span>
+      <span class="key"><span class="swatch" style="background:var(--compute)"></span>transformer layers &mdash; where reasoning happens</span>
+    </div>
+
+    <div class="stackwrap">
+      <div class="stacklab" id="stacklab">Transformer layers that fit</div>
+      <div class="stack" id="stack"></div>
+    </div>
+
+    <dl class="readout">
+      <div class="cell"><dt>Total parameters</dt><dd id="rTotal">&mdash;</dd></div>
+      <div class="cell"><dt>Layers</dt><dd id="rLayers">&mdash;</dd></div>
+      <div class="cell"><dt>Embedding share</dt><dd id="rFrac">&mdash;</dd></div>
+      <div class="cell"><dt>Params / layer</dt><dd id="rPerLayer">&mdash;</dd></div>
+      <div class="cell"><dt>Headroom to 50M</dt><dd id="rHead">&mdash;</dd></div>
+    </dl>
+  </div>
+</div>
+
+<section>
+  <h2>The measured tradeoff</h2>
+  <p class="sectnote">
+    Shrinking the vocabulary is not free: fewer, coarser tokens mean more tokens per byte of
+    text, which costs compute and shortens effective context. So the study fixes <em>both</em>
+    the parameter budget and the FLOP budget, and asks which allocation wins. Bits&#8209;per&#8209;byte
+    barely moves. Reasoning accuracy moves enormously &mdash; in the other direction.
+  </p>
+  <div class="tablewrap">
+    <table id="resultsTable">
+      <thead><tr>
+        <th>Vocab</th><th>Layers</th><th>Embed %</th><th>Bytes/token</th>
+        <th>Steps</th><th>Bits/byte</th><th>Token PPL</th>
+        <th>Reason (gen)</th><th>Reason (choice)</th>
+      </tr></thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <div class="chartbox">
+    <svg id="chart" viewBox="0 0 720 280" width="100%" height="280" role="img"
+         aria-label="Bits per byte and reasoning accuracy against vocabulary size, diverging"></svg>
+  </div>
+  <p class="note">
+    <b>The two curves disagree, and the optimum is interior.</b> Compression is best at a
+    2,048-token vocabulary; reasoning is best at 8,192. Pushed to the extreme &mdash; 16,384 tokens,
+    73.5% of the budget in embeddings, only 4 layers left &mdash; compression collapses by 12.5%
+    for no further reasoning gain. Our hypothesis was that the smallest vocabulary would win on
+    both. It lost on one and the experiment corrected us.
+  </p>
+  <p class="note">
+    <b>Why bits&#8209;per&#8209;byte, not perplexity.</b> Per&#8209;token perplexity is not comparable across
+    tokenizers: a larger vocabulary makes each token carry more text, so it predicts fewer and
+    harder tokens and its perplexity looks better without the model modelling the underlying text
+    any better. Normalising by the raw bytes of held&#8209;out text removes the tokenizer from the
+    metric entirely. Every comparison here is in bits&#8209;per&#8209;byte; token perplexity is shown only
+    to demonstrate how badly it misleads.
+  </p>
+  <p class="note">
+    <b>Two reasoning columns, because the obvious one is confounded.</b> Free generation
+    (&ldquo;gen&rdquo;) rewards large vocabularies for a reason that has nothing to do with
+    reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip.
+    Rescoring every candidate by byte&#8209;normalised likelihood &mdash; how ARC and HellaSwag are
+    scored &mdash; shrinks the apparent effect by <b>1.6&times;</b>. Both are reported; the
+    forced&#8209;choice column is the one to trust.
+  </p>
+  <p class="note" style="border-left-color:var(--embed)">
+    <b>Scale caveat.</b> This pilot is ~2.9M parameters on a synthetic corpus, and with 80
+    held&#8209;out items the reasoning confidence intervals are roughly &plusmn;11 points &mdash;
+    the 65% and 50% rows overlap. The trend is suggestive, not settled. The flagship 50M sweep on
+    TinyStories and FineWeb&#8209;Edu is the load&#8209;bearing evidence.
+  </p>
+</section>
+
+<section>
+  <h2>Architecture</h2>
+  <p class="sectnote">
+    Deliberately conventional&#8209;modern, so the variable under study is the budget allocation
+    rather than a pile of confounding novelties.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Component</th><th>Choice</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>Normalisation</td><td>RMSNorm, pre&#8209;norm</td><td>Fewer parameters and ops than LayerNorm</td></tr>
+        <tr><td>Positions</td><td>RoPE</td><td>No learned position table to spend budget on</td></tr>
+        <tr><td>Feed&#8209;forward</td><td>SwiGLU, d_ff = 8/3 &middot; d</td><td>Matches 4d parameter cost at better quality</td></tr>
+        <tr><td>Attention</td><td>GQA + QK&#8209;norm</td><td>Smaller KV cache; stable at high learning rate</td></tr>
+        <tr><td>Embeddings</td><td>Tied input/output</td><td>Halves the single largest parameter block</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Parsimony &middot; trained from scratch, no pretrained initialisation &middot;
+  parameter counts verified by <code>scripts/verify_params.py</code>
+</footer>
+</div>
+
+<script>
+const BUDGET = 50000000, D = 512;
+const RESULTS = [{"vocab_actual": 512, "n_layers": 15, "embed_fraction": 0.022616838943369556, "bytes_per_token": 2.2458891013384323, "steps": 587, "bits_per_byte": 1.2806266642578463, "token_ppl": 7.330161967626743, "reasoning_acc": 0.1125, "reasoning_choice_acc": 0.5}, {"vocab_actual": 2048, "n_layers": 14, "embed_fraction": 0.09022423895325785, "bytes_per_token": 3.1008447729672652, "steps": 629, "bits_per_byte": 1.2638474966439062, "token_ppl": 14.705956428568802, "reasoning_acc": 0.1375, "reasoning_choice_acc": 0.4}, {"vocab_actual": 8192, "n_layers": 10, "embed_fraction": 0.3570587978904241, "bytes_per_token": 3.412550842533411, "steps": 881, "bits_per_byte": 1.2886369661701036, "token_ppl": 20.609668306736335, "reasoning_acc": 0.3875, "reasoning_choice_acc": 0.65}, {"vocab_actual": 16384, "n_layers": 4, "embed_fraction": 0.7352030513798519, "bytes_per_token": 3.545783859931576, "steps": 2203, "bits_per_byte": 1.4212432065194975, "token_ppl": 32.15516058883286, "reasoning_acc": 0.5, "reasoning_choice_acc": 0.65}];
+
+function solveShape(vocab, budget, d){
+  const dFF = Math.max(64, Math.round(d * (8/3) / 64) * 64);
+  const emb = vocab * d;                 // tied input/output
+  const perLayer = 4*d*d + 3*d*dFF + 2*d;
+  const layers = Math.max(0, Math.floor((budget - emb - d) / perLayer));
+  const total = emb + layers*perLayer + d;
+  return {vocab, d, dFF, emb, perLayer, layers, total, frac: total ? emb/total : 1};
+}
+const fmt = n => n.toLocaleString('en-US');
+const m2 = n => (n/1e6).toFixed(2) + 'M';
+
+// log-scale slider 512 -> 65536
+const VMIN = Math.log(512), VMAX = Math.log(65536);
+const posToVocab = p => Math.round(Math.exp(VMIN + (VMAX-VMIN)*p/100) / 256) * 256;
+const vocabToPos = v => Math.round((Math.log(v)-VMIN)/(VMAX-VMIN)*100);
+
+const $ = id => document.getElementById(id);
+let lastLayers = -1;
+
+function render(vocab){
+  const s = solveShape(vocab, BUDGET, D);
+  const embPct = s.total ? (s.emb/s.total*100) : 100;
+
+  $('vocabval').textContent = fmt(vocab);
+  $('segEmbed').style.width = embPct + '%';
+  $('segCompute').style.width = (100-embPct) + '%';
+  $('segEmbed').textContent = embPct > 14 ? m2(s.emb) + '  ' + embPct.toFixed(0) + '%' : '';
+  $('segCompute').textContent = (100-embPct) > 14 ? m2(s.total-s.emb) + '  ' + (100-embPct).toFixed(0) + '%' : '';
+
+  $('rTotal').innerHTML = m2(s.total) + ' <small>/ 50M</small>';
+  $('rLayers').textContent = s.layers;
+  $('rFrac').textContent = embPct.toFixed(1) + '%';
+  $('rPerLayer').textContent = m2(s.perLayer);
+  $('rHead').textContent = m2(BUDGET - s.total);
+  $('cfgline').textContent = `d_model ${D} · d_ff ${s.dFF} · tied embeddings`;
+  $('stacklab').textContent = `Transformer layers that fit — ${s.layers} × ${m2(s.perLayer)}`;
+
+  if (s.layers !== lastLayers){
+    const st = $('stack');
+    st.innerHTML = '';
+    const maxRef = solveShape(512, BUDGET, D).layers;
+    for (let i=0;i<maxRef;i++){
+      const el = document.createElement('div');
+      el.className = 'layer' + (i < s.layers ? '' : ' ghost');
+      el.style.animationDelay = (i*11) + 'ms';
+      st.appendChild(el);
+    }
+    lastLayers = s.layers;
+  }
+}
+
+$('vocab').addEventListener('input', e => render(posToVocab(+e.target.value)));
+document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => {
+  const v = +b.dataset.v;
+  $('vocab').value = vocabToPos(v);
+  render(v);
+}));
+
+/* ---- results table + chart ---- */
+function paintResults(){
+  const body = $('resultsBody');
+  if (!RESULTS.length){
+    body.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:left">Run pending.</td></tr>';
+    return;
+  }
+  const bestBPB = Math.min(...RESULTS.map(r => r.bits_per_byte));
+  const bestAcc = Math.max(...RESULTS.map(r => r.reasoning_acc));
+  body.innerHTML = RESULTS.map(r => `<tr>
+    <td>${fmt(r.vocab_actual)}</td>
+    <td>${r.n_layers}</td>
+    <td>${(r.embed_fraction*100).toFixed(1)}%</td>
+    <td>${r.bytes_per_token.toFixed(2)}</td>
+    <td>${fmt(r.steps)}</td>
+    <td class="${r.bits_per_byte===bestBPB?'best':''}">${r.bits_per_byte.toFixed(4)}</td>
+    <td>${r.token_ppl.toFixed(2)}</td>
+    <td class="${r.reasoning_acc===bestAcc?'best':''}">${(r.reasoning_acc*100).toFixed(1)}%</td>
+    <td>${r.reasoning_choice_acc==null?'&mdash;':(r.reasoning_choice_acc*100).toFixed(1)+'%'}</td>
+  </tr>`).join('');
+  drawChart();
+}
+
+function drawChart(){
+  const svg = $('chart');
+  if (!RESULTS.length) return;
+  const W=720,H=280, L=66,R=66,T=24,B=52;
+  const xs = RESULTS.map(r => Math.log(r.vocab_actual));
+  const x0=Math.min(...xs), x1=Math.max(...xs);
+  const px = v => L + (x1===x0?0.5:(v-x0)/(x1-x0))*(W-L-R);
+
+  const bs = RESULTS.map(r => r.bits_per_byte);
+  let b0=Math.min(...bs), b1=Math.max(...bs);
+  const bpad=(b1-b0)*0.28 || 0.05; b0-=bpad; b1+=bpad;
+  const pyB = v => T + (1-(v-b0)/(b1-b0))*(H-T-B);
+
+  const accKey = r => (r.reasoning_choice_acc!=null ? r.reasoning_choice_acc : r.reasoning_acc);
+  const pyA = v => T + (1-v)*(H-T-B);   // accuracy always 0..1
+
+  let g = '';
+  for (let i=0;i<=3;i++){
+    const v=b0+(b1-b0)*i/3, y=pyB(v);
+    g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="#2A3142" stroke-width="1"/>`;
+    g += `<text x="${L-9}" y="${(y+4).toFixed(1)}" fill="#4FB3A5" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="end">${v.toFixed(3)}</text>`;
+  }
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    g += `<text x="${W-R+9}" y="${(pyA(v)+4).toFixed(1)}" fill="#E8A33D" font-size="11" font-family="IBM Plex Mono,monospace">${(v*100).toFixed(0)}%</text>`;
+  });
+
+  const line = (vals, py, color) => {
+    const pts = RESULTS.map((r,i)=>`${px(Math.log(r.vocab_actual)).toFixed(1)},${py(vals[i]).toFixed(1)}`).join(' ');
+    let out = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+    RESULTS.forEach((r,i)=>{
+      out += `<circle cx="${px(Math.log(r.vocab_actual)).toFixed(1)}" cy="${py(vals[i]).toFixed(1)}" r="4.5" fill="${color}"/>`;
+    });
+    return out;
+  };
+  g += line(bs, pyB, '#4FB3A5');
+  g += line(RESULTS.map(accKey), pyA, '#E8A33D');
+
+  RESULTS.forEach(r=>{
+    const cx=px(Math.log(r.vocab_actual));
+    g += `<text x="${cx.toFixed(1)}" y="${H-B+20}" fill="#8A92A8" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">${fmt(r.vocab_actual)}</text>`;
+    g += `<text x="${cx.toFixed(1)}" y="${H-B+35}" fill="#5C6478" font-size="10" font-family="IBM Plex Mono,monospace" text-anchor="middle">${r.n_layers}L</text>`;
+  });
+  g += `<text x="${L}" y="${T-8}" fill="#4FB3A5" font-size="11" font-family="IBM Plex Mono,monospace">bits/byte (lower better)</text>`;
+  g += `<text x="${W-R}" y="${T-8}" fill="#E8A33D" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="end">reasoning accuracy</text>`;
+  g += `<text x="${(L+(W-R))/2}" y="${H-4}" fill="#5C6478" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">vocabulary size (log scale) — layers shown beneath</text>`;
+  svg.innerHTML = g;
+}
+
+render(8192);
+paintResults();
+</script>

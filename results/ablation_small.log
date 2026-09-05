@@ -1,0 +1,71 @@
+== building corpus ==
+distinct word types=24,478
+train docs=30000  val docs=300  reasoning items=80
+
+===== vocab 512 =====
+  tokenizer: actual_vocab=512 bytes/token=2.246
+  train tokens=2,263,705
+  vocab=   512  d= 128  L=15  heads=2/2kv  d_ff=  320  | embed  0.07M ( 2.3%)  blocks  2.83M  | total  2.90M
+  params=2,897,664 flops/token=1.994e+07 -> 587 steps (compute-matched)
+  step     0 loss 6.2701 lr 2.73e-04      669 tok/s
+  step    97 loss 2.5540 lr 2.85e-03     3043 tok/s
+  step   194 loss 1.7700 lr 2.38e-03     3250 tok/s
+  step   291 loss 1.4598 lr 1.71e-03     3310 tok/s
+  step   388 loss 1.6662 lr 1.02e-03     3364 tok/s
+  step   485 loss 1.3981 lr 5.04e-04     3388 tok/s
+  step   582 loss 1.5808 lr 3.01e-04     3383 tok/s
+  step   586 loss 1.2860 lr 3.00e-04     3382 tok/s
+  -> BPB=1.2806  tokPPL=7.33  gen=0.113 choice=0.500  (203s)
+
+===== vocab 2048 =====
+  tokenizer: actual_vocab=2048 bytes/token=3.101
+  train tokens=1,442,475
+  vocab= 2,048  d= 128  L=14  heads=2/2kv  d_ff=  320  | embed  0.26M ( 9.0%)  blocks  2.64M  | total  2.90M
+  params=2,905,472 flops/token=1.861e+07 -> 629 steps (compute-matched)
+  step     0 loss 7.6280 lr 2.50e-04     2936 tok/s
+  step   104 loss 2.3860 lr 2.85e-03     3003 tok/s
+  step   208 loss 1.7998 lr 2.38e-03     3234 tok/s
+  step   312 loss 1.9401 lr 1.71e-03     3271 tok/s
+  step   416 loss 2.0770 lr 1.02e-03     3204 tok/s
+  step   520 loss 1.7593 lr 5.03e-04     3184 tok/s
+  step   624 loss 1.9260 lr 3.00e-04     3178 tok/s
+  step   628 loss 1.6856 lr 3.00e-04     3178 tok/s
+  -> BPB=1.2638  tokPPL=14.71  gen=0.138 choice=0.400  (223s)
+
+===== vocab 8192 =====
+  tokenizer: actual_vocab=8192 bytes/token=3.413
+  train tokens=1,276,032
+  vocab= 8,192  d= 128  L=10  heads=2/2kv  d_ff=  320  | embed  1.05M (35.7%)  blocks  1.89M  | total  2.94M
+  params=2,936,704 flops/token=1.329e+07 -> 881 steps (compute-matched)
+  step     0 loss 9.0133 lr 1.76e-04     1395 tok/s
+  step   146 loss 1.8237 lr 2.85e-03     3527 tok/s
+  step   292 loss 1.6993 lr 2.38e-03     3603 tok/s
+  step   438 loss 1.5623 lr 1.70e-03     3613 tok/s
+  step   584 loss 1.5397 lr 1.01e-03     3561 tok/s
+  step   730 loss 1.4466 lr 4.98e-04     3463 tok/s
+  step   876 loss 1.4527 lr 3.00e-04     3449 tok/s
+  step   880 loss 1.3377 lr 3.00e-04     3451 tok/s
+  -> BPB=1.2886  tokPPL=20.61  gen=0.388 choice=0.650  (276s)
+
+===== vocab 16384 =====
+  tokenizer: actual_vocab=16384 bytes/token=3.546
+  train tokens=1,225,611
+  vocab=16,384  d= 128  L= 4  heads=2/2kv  d_ff=  320  | embed  2.10M (73.5%)  blocks  0.75M  | total  2.85M
+  params=2,852,480 flops/token=5.318e+06 -> 2203 steps (compute-matched)
+  step     0 loss 9.7204 lr 6.82e-05     3859 tok/s
+  step   367 loss 1.5277 lr 2.85e-03     3718 tok/s
+  step   734 loss 1.2286 lr 2.37e-03     3679 tok/s
+  step  1101 loss 1.4348 lr 1.69e-03     3692 tok/s
+  step  1468 loss 1.1717 lr 1.00e-03     3751 tok/s
+  step  1835 loss 1.1936 lr 4.89e-04     3794 tok/s
+  step  2202 loss 1.1607 lr 3.00e-04     3822 tok/s
+  -> BPB=1.4212  tokPPL=32.16  gen=0.500 choice=0.650  (601s)
+
+==== SUMMARY (compute- and parameter-matched) ====
+  vocab   L   emb%   B/tok  steps      BPB    tokPPL    gen  choice
+    512  15  2.3%   2.246    587   1.2806      7.33  0.113   0.500
+   2048  14  9.0%   3.101    629   1.2638     14.71  0.138   0.400
+   8192  10 35.7%   3.413    881   1.2886     20.61  0.388   0.650
+  16384   4 73.5%   3.546   2203   1.4212     32.16  0.500   0.650
+
+wrote results/ablation_small/results.json

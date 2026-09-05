@@ -1,0 +1,4 @@
+torch>=2.1
+tokenizers>=0.15
+numpy>=1.24
+datasets>=2.16    # only needed for the GPU run (TinyStories / FineWeb-Edu)

@@ -1,0 +1,170 @@
+[
+  {
+    "vocab_requested": 512,
+    "vocab_actual": 512,
+    "d_model": 128,
+    "n_layers": 15,
+    "params": 2897664,
+    "embed_params": 65536,
+    "embed_fraction": 0.022616838943369556,
+    "bytes_per_token": 2.2458891013384323,
+    "steps": 587,
+    "train_tokens": 601088,
+    "flops": 11986829574144,
+    "wall_s": 177.81841707229614,
+    "final_train_loss": 1.2860090732574463,
+    "bits_per_byte": 1.2806266642578463,
+    "token_ppl": 7.330161967626743,
+    "nats_per_token": 1.9919976121928722,
+    "n_tokens": 23319,
+    "n_bytes": 52330,
+    "reasoning_acc": 0.1125,
+    "reasoning_choice_acc": 0.5,
+    "reasoning_samples": [
+      {
+        "prompt": "ives away 5. How many are left?\nStep 1: 38 - 5 = 33.\nAnswer:",
+        "gen": " 30.",
+        "want": "33",
+        "hit": false
+      },
+      {
+        "prompt": "us > Housemother.\nStep 3: so Mechanic > Housemother.\nAnswer:",
+        "gen": " Synapse.",
+        "want": "Mechanic",
+        "hit": false
+      },
+      {
+        "prompt": "How many vanguardists in total?\nStep 1: 4 x 12 = 48.\nAnswer:",
+        "gen": " 40.",
+        "want": "48",
+        "hit": false
+      }
+    ]
+  },
+  {
+    "vocab_requested": 2048,
+    "vocab_actual": 2048,
+    "d_model": 128,
+    "n_layers": 14,
+    "params": 2905472,
+    "embed_params": 262144,
+    "embed_fraction": 0.09022423895325785,
+    "bytes_per_token": 3.1008447729672652,
+    "steps": 629,
+    "train_tokens": 644096,
+    "flops": 11988223918080,
+    "wall_s": 202.74093103408813,
+    "final_train_loss": 1.6855847835540771,
+    "bits_per_byte": 1.2638474966439062,
+    "token_ppl": 14.705956428568802,
+    "nats_per_token": 2.6882526109360225,
+    "n_tokens": 17053,
+    "n_bytes": 52330,
+    "reasoning_acc": 0.1375,
+    "reasoning_choice_acc": 0.4,
+    "reasoning_samples": [
+      {
+        "prompt": "ives away 5. How many are left?\nStep 1: 38 - 5 = 33.\nAnswer:",
+        "gen": " 33.",
+        "want": "33",
+        "hit": true
+      },
+      {
+        "prompt": "us > Housemother.\nStep 3: so Mechanic > Housemother.\nAnswer:",
+        "gen": " Capcan.",
+        "want": "Mechanic",
+        "hit": false
+      },
+      {
+        "prompt": "How many vanguardists in total?\nStep 1: 4 x 12 = 48.\nAnswer:",
+        "gen": " 48.",
+        "want": "48",
+        "hit": true
+      }
+    ]
+  },
+  {
+    "vocab_requested": 8192,
+    "vocab_actual": 8192,
+    "d_model": 128,
+    "n_layers": 10,
+    "params": 2936704,
+    "embed_params": 1048576,
+    "embed_fraction": 0.3570587978904241,
+    "bytes_per_token": 3.412550842533411,
+    "steps": 881,
+    "train_tokens": 902144,
+    "flops": 11993867354112,
+    "wall_s": 261.51214265823364,
+    "final_train_loss": 1.3377141952514648,
+    "bits_per_byte": 1.2886369661701036,
+    "token_ppl": 20.609668306736335,
+    "nats_per_token": 3.0257603009706453,
+    "n_tokens": 15448,
+    "n_bytes": 52330,
+    "reasoning_acc": 0.3875,
+    "reasoning_choice_acc": 0.65,
+    "reasoning_samples": [
+      {
+        "prompt": "ives away 5. How many are left?\nStep 1: 38 - 5 = 33.\nAnswer:",
+        "gen": " 33.",
+        "want": "33",
+        "hit": true
+      },
+      {
+        "prompt": "us > Housemother.\nStep 3: so Mechanic > Housemother.\nAnswer:",
+        "gen": " Charkha.",
+        "want": "Mechanic",
+        "hit": false
+      },
+      {
+        "prompt": "How many vanguardists in total?\nStep 1: 4 x 12 = 48.\nAnswer:",
+        "gen": " 48.",
+        "want": "48",
+        "hit": true
+      }
+    ]
+  },
+  {
+    "vocab_requested": 16384,
+    "vocab_actual": 16384,
+    "d_model": 128,
+    "n_layers": 4,
+    "params": 2852480,
+    "embed_params": 2097152,
+    "embed_fraction": 0.7352030513798519,
+    "bytes_per_token": 3.545783859931576,
+    "steps": 2203,
+    "train_tokens": 2255872,
+    "flops": 11997629644800,
+    "wall_s": 590.4222140312195,
+    "final_train_loss": 1.1607255935668945,
+    "bits_per_byte": 1.4212432065194975,
+    "token_ppl": 32.15516058883286,
+    "nats_per_token": 3.470572953784676,
+    "n_tokens": 14854,
+    "n_bytes": 52330,
+    "reasoning_acc": 0.5,
+    "reasoning_choice_acc": 0.65,
+    "reasoning_samples": [
+      {
+        "prompt": "ives away 5. How many are left?\nStep 1: 38 - 5 = 33.\nAnswer:",
+        "gen": " 33.",
+        "want": "33",
+        "hit": true
+      },
+      {
+        "prompt": "us > Housemother.\nStep 3: so Mechanic > Housemother.\nAnswer:",
+        "gen": " Diarrheic.",
+        "want": "Mechanic",
+        "hit": false
+      },
+      {
+        "prompt": "How many vanguardists in total?\nStep 1: 4 x 12 = 48.\nAnswer:",
+        "gen": " 48.",
+        "want": "48",
+        "hit": true
+      }
+    ]
+  }
+]
