@@ -4,6 +4,7 @@
 
 A from-scratch small language model for [GIBC V2](https://gibc-v2.devpost.com/) Track 01,
 built around a single question the competition rules force you to answer.
+for frontend demo: https://1234620.github.io/parsimony/
 
 ---
 
