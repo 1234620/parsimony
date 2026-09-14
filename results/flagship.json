@@ -1,0 +1,16 @@
+{
+  "vocab": 16384,
+  "params": 48872576,
+  "d_model": 512,
+  "n_layers": 13,
+  "train_tokens": 294912000,
+  "total_flops": 83695515992064000,
+  "wall_clock_s": 8535.645092248917,
+  "gpu": "Tesla T4",
+  "bits_per_byte": 0.9416013547353811,
+  "token_ppl": 15.569391305164817,
+  "nats_per_token": 2.745306891001098,
+  "n_tokens": 202267,
+  "n_bytes": 850792,
+  "reasoning_acc": 0.99
+}

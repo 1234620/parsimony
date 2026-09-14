@@ -1,7 +1,7 @@
 # Parsimony — Devpost submission copy
 
-Paste each block into the matching field on the GIBC V2 submission form.
-Numbers marked `[FLAGSHIP]` come from `results/flagship.json` after your Kaggle run.
+Paste each block into the matching field on the GIBC V2 submission form. Flagship numbers
+below are filled in from the completed Kaggle run (`results/flagship.json`).
 
 ---
 
@@ -46,20 +46,34 @@ that answers the allocation question:
 
 ## What we found
 
-Our hypothesis was that a small vocabulary wins, because depth is where computation happens.
-**The experiment refuted it, and the real answer is more interesting: the two capabilities we
-measured disagree.**
+Our hypothesis, from a cheap synthetic-data pilot, was that a small vocabulary wins because
+depth is where computation happens — the pilot found the two capabilities we measured
+*disagreeing*, with no vocabulary winning both. **The GPU sweep on real text overturned that:
+at the scale that matters, compression and reasoning agree, and both peak at the same,
+fairly large vocabulary.**
 
-Bits-per-byte is nearly flat across the entire sweep — compression barely cares how the budget
-is split. Reasoning accuracy is not flat at all. Spending a large share of the budget on the
-embedding table costs very little compression and changes reasoning substantially.
+Across a parameter- and FLOP-matched sweep of {2,048, 8,192, 16,384, 32,768}-token
+vocabularies on TinyStories, FineWeb-Edu, and our reasoning traces, both bits-per-byte
+(1.1332) and reasoning accuracy (96.7%) are best at **16,384 tokens** — not the smallest
+vocabulary we tested (worst on both) and not the largest we completed (32,768 gives a little
+back on both). GPT-2's own 50,257-token vocabulary didn't finish training inside our compute
+budget, so we can only say 16,384 is the best of what we measured, not that it's globally
+optimal.
 
-We also caught ourselves nearly reporting a confounded result. Free-form generation appeared to
-favour large vocabularies dramatically — but with a bigger vocabulary the gold answer is fewer
-tokens, so greedy decoding simply has fewer chances to slip. Rescoring every candidate with
-byte-normalized likelihood (the way ARC and HellaSwag are scored) removed that advantage and
-changed the ranking. Both numbers are reported side by side, because the gap between them is
-itself a finding about how small-model reasoning gets measured.
+We then trained that winning configuration at the full 50M-parameter budget for the complete
+12,000-step run: **0.9416 bits/byte, 99% reasoning accuracy, 48,872,576 parameters** — both
+well ahead of any reduced-scale sweep config, as expected from roughly 4× the parameters and a
+much longer run. Kaggle's 12-hour session cap killed the first training commit at step
+10,000/12,000; the checkpoint/resume path we built for exactly this reason picked it up
+cleanly and finished the remaining 2,000 steps in a second commit.
+
+One confound we're upfront about: both the sweep and the flagship report free-generation
+reasoning accuracy, not the byte-normalized forced-choice rescoring we used in the pilot to
+catch a tokenization artifact there (larger vocabularies give the gold answer in fewer tokens,
+so greedy decoding has fewer chances to slip — rescoring shrank that pilot's apparent effect
+1.6×). We didn't re-run that rescoring at GPU scale, so part of 16,384's edge over 2,048 above
+may be this same artifact rather than pure capability. We'd rather name that gap than paper
+over it.
 
 ## How we built it
 
@@ -98,13 +112,16 @@ tokenizer, not the model.
 
 ## What we learned
 
-That the interesting question in a constrained-budget regime is not "which architecture is best"
-but "which capability are you buying." At 50M parameters those trade against each other, and the
-answer depends on what the model is for.
+That our own hypothesis, and the small pilot that seemed to support it, were both wrong in an
+interesting way — not because the reasoning was bad, but because a synthetic corpus at 1/17th
+scale doesn't reliably preview what happens on real text at full scale. The interesting question
+in a constrained-budget regime isn't "which architecture is best," it's "does my cheap proxy
+experiment actually predict my expensive one" — and here, it partially didn't.
 
 Also: the discipline that mattered most was not any modelling trick. It was refusing to compare
-numbers that were not comparable — across tokenizers, across step counts, across answer lengths.
-Two of our three near-miss errors were measurement errors, not modelling errors.
+numbers that were not comparable — across tokenizers, across step counts, across answer lengths —
+and being willing to say plainly when a confound (like free-generation length bias) hadn't been
+ruled out at full scale, rather than letting a clean headline number stand unqualified.
 
 ## What's next
 
@@ -119,6 +136,6 @@ Demo: vanilla JavaScript and inline SVG, no framework.
 
 ## Try it
 
-- Interactive allocator demo: `[YOUR DEPLOYED URL]`
-- Repository: `[YOUR GITHUB URL]`
+- Interactive allocator demo: https://1234620.github.io/parsimony/
+- Repository: https://github.com/1234620/parsimony
 - Parameter verification: `python scripts/verify_params.py`

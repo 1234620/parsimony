@@ -1,4 +1,4 @@
-# Demo video script — 3 minutes
+# Demo video script — ~3:20
 
 GIBC requires 2–5 minutes, English audio or subtitles. Screen recording with voiceover is fine;
 you do not need to be on camera. **Record the demo page live** — judges can tell a real
@@ -44,22 +44,28 @@ interaction from a slideshow.
 > "So everything here is bits-per-byte — negative log likelihood normalised by the raw bytes of
 > held-out text. The tokenizer drops out of the metric entirely."
 
-### 1:40–2:20 · The finding (screen: the dual-axis chart)
+### 1:40–2:40 · The finding (screen: the dual-axis chart, then flagship numbers)
 
-> "Here's what we found. The teal line is compression. It's almost flat — how you split the
-> budget barely affects it."
+> "Here's what we found. The teal line is compression, the amber line is reasoning — and they
+> agree. Both peak at the same vocabulary: sixteen thousand three hundred eighty-four tokens.
+> Not the smallest vocabulary we tested — that's worst on both. Not the largest we finished
+> either — that gives a little back on both."
+
+**Pause on the peak.**
+
+> "A smaller pilot on synthetic data first suggested these two capabilities trade off against
+> each other. At full scale, on real text, they don't. We trained that winning configuration at
+> the full fifty-million-parameter budget — Kaggle's twelve-hour session cap actually killed the
+> first run at step ten thousand of twelve thousand, and our checkpoint-resume path picked it
+> back up and finished. Final numbers: point nine four bits-per-byte, ninety-nine percent
+> reasoning accuracy."
 >
-> "The amber line is reasoning. That is not flat."
+> "One thing we're upfront about: that reasoning number is free-generation accuracy, not the
+> byte-normalised rescoring our own pilot showed can inflate large-vocabulary scores by masking
+> a tokenization artifact. We didn't re-run that check at this scale — so some of this gap might
+> still be that same artifact, not pure capability."
 
-**Pause on the divergence.**
-
-> "And we nearly published a confounded version of this. Free-form generation made large
-> vocabularies look dramatically better — but with a bigger vocabulary the answer is fewer
-> tokens, so greedy decoding has fewer chances to slip. When we rescored every candidate with
-> byte-normalised likelihood, the way ARC and HellaSwag are scored, the ranking changed. We
-> report both numbers, because the gap between them is itself a result."
-
-### 2:20–2:45 · The build (screen: terminal, run `python scripts/verify_params.py`)
+### 2:40–3:05 · The build (screen: terminal, run `python scripts/verify_params.py`)
 
 > "Trained from scratch — no pretrained weights, no distillation. Modern small-scale stack:
 > RMSNorm, RoPE, SwiGLU, grouped-query attention, tied embeddings."
@@ -69,7 +75,7 @@ interaction from a slideshow.
 
 **Let the parameter table print on screen — it proves every config is under the cap.**
 
-### 2:45–3:00 · Close (screen: back to the demo page)
+### 3:05–3:20 · Close (screen: back to the demo page)
 
 > "Two of the three mistakes that nearly cost us this result were measurement errors, not
 > modelling errors. In a fixed-budget regime, the hard part isn't building the model. It's

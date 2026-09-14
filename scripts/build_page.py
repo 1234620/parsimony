@@ -4,10 +4,16 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 body = (root / "app" / "page_body.html").read_text()
-res_path = root / "results" / "ablation_small" / "results.json"
+
+# Prefer the real GPU sweep (flagship-scale, natural-text) over the CPU pilot
+# (synthetic corpus, used only to validate the pipeline before the GPU run existed).
+gpu_path = root / "results" / "sweep_gpu" / "results.json"
+pilot_path = root / "results" / "ablation_small" / "results.json"
+res_path = gpu_path if gpu_path.exists() else pilot_path
 
 if res_path.exists():
     rows = json.loads(res_path.read_text())
+    rows = sorted(rows, key=lambda r: r["vocab_actual"])
     keep = ("vocab_actual","n_layers","embed_fraction","bytes_per_token","steps",
             "bits_per_byte","token_ppl","reasoning_acc","reasoning_choice_acc")
     rows = [{k: r.get(k) for k in keep} for r in rows]

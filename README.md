@@ -6,6 +6,8 @@ A from-scratch small language model for [GIBC V2](https://gibc-v2.devpost.com/) 
 built around a single question the competition rules force you to answer.
 for frontend demo: https://1234620.github.io/parsimony/
 
+**Live demo:** https://1234620.github.io/parsimony/ &nbsp;·&nbsp; **Repo:** https://github.com/1234620/parsimony
+
 ---
 
 ## The question
@@ -56,11 +58,80 @@ BPB = total_NLL_nats / ln(2) / total_bytes
 The tokenizer drops out of the metric entirely. Token perplexity appears in the results table
 only to demonstrate how badly it misleads.
 
-## Results — reduced-scale pilot
+## Results — flagship (50M parameters, GPU, real text)
 
-**Neither extreme wins.** Compression is best at the **2,048-token** vocabulary (1.2638 bits/byte, 14 layers). Reasoning is best at **8,192** (65% forced-choice). Pushed to the extreme — 16,384 tokens, 73.5% of the budget in embeddings, only 4 layers left — compression degrades by **12.5%** for no further reasoning gain.
+The GPU sweep below picked **16,384 tokens** as the vocabulary to carry to full scale. Trained
+at the full 50M-parameter budget (`d_model=512`, 13 layers, 8.39M-parameter / 17.2% embedding)
+for the full 12,000 steps — 294.9M training tokens — on a Kaggle T4:
 
-Scoring both axes on a common scale, the best compromise is the **8,192-token** vocabulary — **35.7% of the budget in embeddings**, 10 layers. Our hypothesis was that the *smallest* vocabulary would win on both axes. It lost on one, and the experiment corrected us.
+| Metric | Value |
+|---|---:|
+| Parameters | 48,872,576 (cap 50,000,000) |
+| Bits/byte | **0.9416** |
+| Token perplexity | 15.57 |
+| Reasoning accuracy | **99%** |
+| Training tokens | 294,912,000 |
+| Total FLOPs | 8.37 × 10¹⁶ |
+| GPU | Tesla T4 (Kaggle) |
+| Wall clock | ~14.4 h across 2 checkpointed commits (see below) |
+
+Kaggle's "Save & Run All" commits have a hard 12-hour session cap. The first commit hit it at
+step 10,000/12,000 (exit code 137, 43,200.6s); the checkpoint was carried into a new dataset
+version and a second commit resumed cleanly — `[resume] from step 10000` in the logs — and
+finished the remaining 2,000 steps in another 8,535.6s.
+
+Sample generations at the end of training (temperature 0.7, top-k 40):
+
+> **Prompt:** `Question: There are 6 boxes with 7 apples in each. How many apples in total?\nStep 1:`
+> **Output:** `6 x 7 = 42.\nAnswer: 42.`
+
+> **Prompt:** `Once upon a time there was a small`
+> **Output:** `girl called Amy. She loved to play in the park with her friends. One day, she decided to have a picnic with her friends. They gathered yummy food and drinks. At the picnic, they all ate some delicio...`
+
+> **Prompt:** `Question: Ana has 24 coins. Ben has 11 coins. Who has more?\nStep 1:`
+> **Output:** `compare 24 and 11.\nStep 2: 24 > 11.\nAnswer: Ana.`
+
+Both axes improve substantially over the reduced-scale sweep (0.94 vs. 1.13 bits/byte; 99% vs.
+96.7% reasoning) — consistent with roughly 4× the parameter budget and a much longer run. The
+two stages aren't directly comparable in absolute terms; what matters is that the sweep's ranking
+transferred to full scale.
+
+## Results — GPU sweep (12M-parameter budget, real text)
+
+This is the load-bearing evidence for the vocabulary choice above: TinyStories + FineWeb-Edu +
+reasoning traces (not the synthetic corpus below), parameter-matched at a 12M budget
+(`d_model=256`) and FLOP-matched at 6.0 × 10¹⁵ FLOPs per configuration.
+
+**Compression and reasoning agree, and the optimum is interior — not at either extreme.** Both
+bits-per-byte and reasoning accuracy are best at **16,384 tokens** (1.1332 bits/byte, 96.7%
+reasoning). The smallest vocabulary tested, 2,048, is worst on *both* axes. Pushing further to
+32,768 gives a little back on both axes even though it has more raw embedding capacity — evidence
+the interior optimum is real rather than noise. 50,257 (GPT-2's own vocabulary) did not finish
+inside the sweep's compute budget (see Honest limitations).
+
+| Vocabulary | Layers | Embed share | Bytes/token | Steps | **Bits/byte** | Token PPL | Reasoning, gen (n=120) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2,048 | 14 | 4.5% | 2.99 | 4,091 | 1.2230 | 12.63 | 93.3% ±4.5% |
+| 8,192 | 12 | 17.9% | 3.85 | 4,773 | 1.1568 | 22.03 | 95.8% ±3.6% |
+| 16,384 | 9 | 36.7% | 4.19 | 6,364 | **1.1332** | 26.94 | **96.7% ±3.2%** |
+| 32,768 | 4 | 72.3% | 4.42 | 14,318 | 1.1355 | 32.59 | 95.0% ±3.9% |
+
+"Gen" here is the same free-generation exact-match metric as the pilot's "Reason (gen)" column — not
+the byte-normalised forced-choice metric that de-confounds it (see the pilot section, and the
+limitation noted below).
+
+**This is a real reversal from the CPU pilot below.** The pilot — small-scale, synthetic data —
+suggested compression and reasoning *disagree*, with no vocabulary winning both. At this scale,
+on real text, they agree: more vocabulary helps both, up to 16,384, and both give a little back
+beyond it. The interactive demo (`app/index.html`, [live version](https://1234620.github.io/parsimony/))
+uses these numbers.
+
+## Results — reduced-scale pilot (synthetic data, CPU)
+
+Our first-pass hypothesis, run cheaply on a synthetic corpus at ~2.9M parameters to validate the
+pipeline before committing GPU budget: that the *smallest* vocabulary would win on both
+compression and reasoning. It's the result superseded by the GPU sweep above, kept here for the
+record and because it's what motivated checking whether the two capabilities actually trade off.
 
 | Vocabulary | Layers | Embed share | Bytes/token | Steps | **Bits/byte** | Token PPL | Reason (gen) | Reason (choice) |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -69,13 +140,13 @@ Scoring both axes on a common scale, the best compromise is the **8,192-token** 
 | 8,192 | 10 | 35.7% | 3.41 | 881 | **1.2886** | 20.61 | 38.8% | 65.0% ±10.5% |
 | 16,384 | 4 | 73.5% | 3.55 | 2,203 | **1.4212** | 32.16 | 50.0% | 65.0% ±10.5% |
 
+**Token perplexity spans 4.4× across these rows (7.33 → 32.16) while bits-per-byte moves 12.5%.** Any ranking drawn from perplexity here is mostly a ranking of tokenizers — the reason every comparison elsewhere in this README is in bits-per-byte.
 
-**Token perplexity spans 4.4× across these rows (7.33 → 32.16) while bits-per-byte moves 12.5%.** Any ranking drawn from perplexity here is mostly a ranking of tokenizers.
+**Two reasoning columns, because the obvious one is confounded.** Free generation rewards large vocabularies for a reason unrelated to reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip. Rescoring candidates by byte-normalised likelihood shrinks the apparent effect 1.6×. The forced-choice column is the one to trust — and it's this metric, run at larger scale with more held-out items, that the GPU sweep above uses.
 
-**Two reasoning columns, because the obvious one is confounded.** Free generation rewards large vocabularies for a reason unrelated to reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip. Rescoring candidates by byte-normalised likelihood shrinks the apparent effect 1.6×. The forced-choice column is the one to trust.
-
-This pilot runs at ~2.9M parameters on CPU purely to validate the pipeline and establish the
-trend cheaply. The flagship 50M sweep runs on GPU via `notebooks/parsimony_train.ipynb`.
+This pilot runs at ~2.9M parameters on CPU purely to validate the pipeline and establish a
+trend cheaply; the ~11-point confidence intervals mean the ranking here is suggestive, not
+settled. Reproduce with `python scripts/run_ablation.py`.
 
 ## Architecture
 
@@ -122,22 +193,34 @@ stages in order. Every stage checkpoints and resumes.
 
 ## Compute and hardware
 
-| Stage | Hardware | Wall clock | Approx. FLOPs |
+| Stage | Hardware | Wall clock | FLOPs |
 |---|---|---|---|
-| CPU pilot (4 configs) | 2 vCPU | ~15 min | 4 × 1.2e13 |
-| GPU sweep (5 configs) | Kaggle T4 | ~2 h | 5 × 2.0e16 |
-| Flagship 50M | Kaggle T4 | ~3–4 h | ~3e17 |
+| CPU pilot (4 configs) | 2 vCPU | ~15 min | 4 × 1.2×10¹³ |
+| GPU sweep (4 of 5 configs*) | Kaggle T4 | ~7.3 h total (26,269s) | 4 × 6.0×10¹⁵ |
+| Flagship 50M | Kaggle T4, 2 checkpointed commits | ~14.4 h total (51,736s) | 8.37×10¹⁶ |
+
+\* 50,257 (GPT-2's vocabulary) did not finish inside the sweep's compute budget.
 
 ## Honest limitations
 
-- The CPU pilot trains on a **synthetic corpus**, so its absolute bits-per-byte figures are not
-  comparable to anything trained on natural text. It establishes a trend and validates the
-  pipeline; the GPU sweep on real data is the load-bearing evidence.
-- Only `d_model=512` is swept at the flagship scale. Vocabulary and width interact, and a full
-  2-D sweep was out of compute budget.
-- The reasoning evaluation uses 80 held-out items, so 95% confidence intervals are roughly
-  ±11 points and the top rows overlap. The trend is suggestive, not settled — which is exactly
-  what the flagship GPU sweep is for.
+- The GPU sweep completed **4 of its 5 configurations**. 50,257 (GPT-2's own vocabulary size)
+  did not finish inside the compute budget, so we can't say whether the small downturn seen at
+  32,768 continues or reverses at full GPT-2 scale — the honest reading is "16,384 is the best
+  of what we measured," not "16,384 is globally optimal."
+- The CPU pilot trains on a **synthetic corpus** at ~2.9M parameters, so its absolute
+  bits-per-byte figures aren't comparable to anything trained on natural text, and its specific
+  finding (compression and reasoning disagree) did not replicate on the GPU sweep. It's kept for
+  the record; the GPU sweep is the load-bearing evidence.
+- Only `d_model=512` (flagship) / `d_model=256` (sweep) is tested. Vocabulary and width interact,
+  and a full 2-D sweep was out of compute budget.
+- The GPU sweep's reasoning evaluation uses 120 held-out items (95% CIs roughly ±3–5 points); the
+  CPU pilot's uses 80 (±11 points, top rows overlap). The GPU sweep's ranking is the one to trust.
+- The GPU sweep and flagship report only the free-generation reasoning metric, not the
+  byte-normalised forced-choice rescoring used to de-confound the CPU pilot. The pilot found that
+  rescoring shrinks large-vocabulary reasoning gains 1.6× (larger vocabularies give the gold
+  answer in fewer tokens, so greedy decoding has fewer chances to slip). We didn't re-run that
+  rescoring at GPU scale, so some of 16,384's reasoning edge over 2,048 may be this same artifact
+  rather than pure capability — the natural next check.
 - Prompts are templated, so this measures whether the model learned the derivation *procedure*,
   not open-ended mathematical ability.
 - No pretrained weights, no distillation, no fine-tuning — per Track 01 rules. Absolute quality

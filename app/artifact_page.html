@@ -204,8 +204,9 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
   <p class="sectnote">
     Shrinking the vocabulary is not free: fewer, coarser tokens mean more tokens per byte of
     text, which costs compute and shortens effective context. So the study fixes <em>both</em>
-    the parameter budget and the FLOP budget, and asks which allocation wins. Bits&#8209;per&#8209;byte
-    barely moves. Reasoning accuracy moves enormously &mdash; in the other direction.
+    the parameter budget and the FLOP budget, and asks which allocation wins. At this scale, on
+    real text, compression and reasoning move <em>together</em> &mdash; both are best at the same
+    vocabulary.
   </p>
   <div class="tablewrap">
     <table id="resultsTable">
@@ -222,11 +223,13 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
          aria-label="Bits per byte and reasoning accuracy against vocabulary size, diverging"></svg>
   </div>
   <p class="note">
-    <b>The two curves disagree, and the optimum is interior.</b> Compression is best at a
-    2,048-token vocabulary; reasoning is best at 8,192. Pushed to the extreme &mdash; 16,384 tokens,
-    73.5% of the budget in embeddings, only 4 layers left &mdash; compression collapses by 12.5%
-    for no further reasoning gain. Our hypothesis was that the smallest vocabulary would win on
-    both. It lost on one and the experiment corrected us.
+    <b>The two curves agree, and the optimum is interior.</b> Both bits&#8209;per&#8209;byte and reasoning
+    accuracy are best at the <b>16,384-token</b> vocabulary (1.1332 bits/byte, 96.7% reasoning) &mdash;
+    not the smallest vocabulary tested (2,048: worst on both) and not the largest completed
+    (32,768: gives a little back on both). A smaller, synthetic&#8209;data pilot first suggested the
+    two capabilities trade off against each other; at this scale, on real text, they don't &mdash;
+    more vocabulary helps both, up to a point. GPT-2's own 50,257-token vocabulary didn't finish
+    training inside the sweep's compute budget, so where that point sits beyond 32,768 is unmeasured.
   </p>
   <p class="note">
     <b>Why bits&#8209;per&#8209;byte, not perplexity.</b> Per&#8209;token perplexity is not comparable across
@@ -237,18 +240,24 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
     to demonstrate how badly it misleads.
   </p>
   <p class="note">
-    <b>Two reasoning columns, because the obvious one is confounded.</b> Free generation
-    (&ldquo;gen&rdquo;) rewards large vocabularies for a reason that has nothing to do with
-    reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip.
-    Rescoring every candidate by byte&#8209;normalised likelihood &mdash; how ARC and HellaSwag are
-    scored &mdash; shrinks the apparent effect by <b>1.6&times;</b>. Both are reported; the
-    forced&#8209;choice column is the one to trust.
+    <b>The reasoning metric above is free generation, and that's a confound worth naming.</b>
+    Free generation rewards large vocabularies for a reason that has nothing to do with
+    reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip. A
+    smaller pilot (below) found that rescoring every candidate by byte&#8209;normalised likelihood
+    &mdash; how ARC and HellaSwag are scored &mdash; shrinks that apparent effect by
+    <b>1.6&times;</b>. We didn't re-run that rescoring at this scale, so part of 16,384's edge over
+    2,048 here may be this same artifact rather than pure capability.
   </p>
   <p class="note" style="border-left-color:var(--embed)">
-    <b>Scale caveat.</b> This pilot is ~2.9M parameters on a synthetic corpus, and with 80
-    held&#8209;out items the reasoning confidence intervals are roughly &plusmn;11 points &mdash;
-    the 65% and 50% rows overlap. The trend is suggestive, not settled. The flagship 50M sweep on
-    TinyStories and FineWeb&#8209;Edu is the load&#8209;bearing evidence.
+    <b>Scale note.</b> The table above is the GPU sweep: a 12M-parameter budget on real text
+    (TinyStories, FineWeb-Edu, reasoning traces), FLOP-matched at 6.0&times;10<sup>15</sup> per
+    configuration, 120 held-out reasoning items (&plusmn;3&#8211;5 points). The smaller CPU pilot
+    below runs on a synthetic corpus, purely to validate the pipeline before spending GPU budget,
+    and with 80 held&#8209;out items its reasoning confidence intervals are roughly &plusmn;11
+    points &mdash; suggestive, not settled, and its own finding didn't replicate above. The full
+    50M-parameter flagship model, trained on the GPU sweep's winning vocabulary, reaches
+    <b>0.9416 bits/byte</b> and <b>99% reasoning accuracy</b> &mdash; see the README for sample
+    generations.
   </p>
 </section>
 
@@ -280,7 +289,7 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
 
 <script>
 const BUDGET = 50000000, D = 512;
-const RESULTS = [{"vocab_actual": 512, "n_layers": 15, "embed_fraction": 0.022616838943369556, "bytes_per_token": 2.2458891013384323, "steps": 587, "bits_per_byte": 1.2806266642578463, "token_ppl": 7.330161967626743, "reasoning_acc": 0.1125, "reasoning_choice_acc": 0.5}, {"vocab_actual": 2048, "n_layers": 14, "embed_fraction": 0.09022423895325785, "bytes_per_token": 3.1008447729672652, "steps": 629, "bits_per_byte": 1.2638474966439062, "token_ppl": 14.705956428568802, "reasoning_acc": 0.1375, "reasoning_choice_acc": 0.4}, {"vocab_actual": 8192, "n_layers": 10, "embed_fraction": 0.3570587978904241, "bytes_per_token": 3.412550842533411, "steps": 881, "bits_per_byte": 1.2886369661701036, "token_ppl": 20.609668306736335, "reasoning_acc": 0.3875, "reasoning_choice_acc": 0.65}, {"vocab_actual": 16384, "n_layers": 4, "embed_fraction": 0.7352030513798519, "bytes_per_token": 3.545783859931576, "steps": 2203, "bits_per_byte": 1.4212432065194975, "token_ppl": 32.15516058883286, "reasoning_acc": 0.5, "reasoning_choice_acc": 0.65}];
+const RESULTS = [{"vocab_actual": 2048, "n_layers": 14, "embed_fraction": 0.04453335652778986, "bytes_per_token": 2.9900604591194644, "steps": 4091, "bits_per_byte": 1.2229737058628303, "token_ppl": 12.634337810027729, "reasoning_acc": 0.9333333333333333, "reasoning_choice_acc": null}, {"vocab_actual": 8192, "n_layers": 12, "embed_fraction": 0.17865009268345872, "bytes_per_token": 3.854276747050177, "steps": 4773, "bits_per_byte": 1.156806938887009, "token_ppl": 22.03489240710592, "reasoning_acc": 0.9583333333333334, "reasoning_choice_acc": null}, {"vocab_actual": 16384, "n_layers": 9, "embed_fraction": 0.36709498896519277, "bytes_per_token": 4.190152605816297, "steps": 6364, "bits_per_byte": 1.1331945125983391, "token_ppl": 26.937065889174203, "reasoning_acc": 0.9666666666666667, "reasoning_choice_acc": null}, {"vocab_actual": 32768, "n_layers": 4, "embed_fraction": 0.7229883282218741, "bytes_per_token": 4.423860587774831, "steps": 14318, "bits_per_byte": 1.1354583564058252, "token_ppl": 32.59460329845826, "reasoning_acc": 0.95, "reasoning_choice_acc": null}];
 
 function solveShape(vocab, budget, d){
   const dFF = Math.max(64, Math.round(d * (8/3) / 64) * 64);
