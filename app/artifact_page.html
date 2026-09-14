@@ -396,6 +396,7 @@ footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
   <button class="tab" role="tab" id="tab-sweep"  aria-controls="pnl-sweep"  aria-selected="false" tabindex="-1">Sweep Results</button>
   <button class="tab" role="tab" id="tab-trade"  aria-controls="pnl-trade"  aria-selected="false" tabindex="-1">The Tradeoff</button>
   <button class="tab" role="tab" id="tab-flag"   aria-controls="pnl-flag"   aria-selected="false" tabindex="-1">Flagship</button>
+  <button class="tab" role="tab" id="tab-bench"  aria-controls="pnl-bench"  aria-selected="false" tabindex="-1">Benchmarks</button>
   <button class="tab" role="tab" id="tab-method" aria-controls="pnl-method" aria-selected="false" tabindex="-1">Method Notes</button>
   <button class="tab" role="tab" id="tab-arch"   aria-controls="pnl-arch"   aria-selected="false" tabindex="-1">Architecture</button>
 </div>
@@ -537,6 +538,57 @@ footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
   </div>
 </section>
 
+<!-- BENCHMARKS -->
+<section class="panel card" id="pnl-bench" role="tabpanel" aria-labelledby="tab-bench" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>Standard benchmarks</h2>
+      <p>The flagship checkpoint scored zero-shot through EleutherAI's lm-evaluation-harness, against the same yardstick everyone else reports.</p>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <p class="lede">
+      Bits&#8209;per&#8209;byte is this project's own metric, chosen because it is tokenizer&#8209;invariant.
+      It is not a substitute for the common benchmarks, so those were run separately through the
+      standard harness. Read every row against chance: <b>HellaSwag</b> and <b>ARC&#8209;Easy</b> are
+      four&#8209;way (25%), <b>PIQA</b> and <b>WinoGrande</b> are two&#8209;way (50%).
+    </p>
+    <div class="chartbox" id="chartBench"></div>
+    <div class="tablewrap" style="margin-top:20px">
+      <table>
+        <thead><tr>
+          <th scope="col">Task</th><th scope="col">Items</th><th scope="col">Chance</th>
+          <th scope="col">acc</th><th scope="col">acc_norm</th><th scope="col">Above chance</th>
+        </tr></thead>
+        <tbody id="benchBody"></tbody>
+      </table>
+    </div>
+
+    <div class="stacklab" style="margin-top:26px">WikiText-103, test split &mdash; 62 documents, loglikelihood-rolling</div>
+    <dl class="flagrid" style="margin-top:10px;margin-bottom:0">
+      <div class="flagcell"><dt>Bits / byte</dt><dd>1.306</dd></div>
+      <div class="flagcell"><dt>Byte perplexity</dt><dd>2.472</dd></div>
+      <div class="flagcell"><dt>Word perplexity</dt><dd>126.5</dd></div>
+    </dl>
+
+    <p class="note warm">
+      <b>These scores are near chance, and that is the honest reading.</b> The model is at chance on
+      WinoGrande and barely above it on HellaSwag; it gets real traction on PIQA and is furthest
+      above chance on ARC&#8209;Easy. That is what a 48.9M-parameter model trained from scratch on
+      ~295M tokens, with no pretraining, distillation or fine-tuning, should be expected to reach.
+      They demonstrate that the harness integration works and place the model against a common
+      yardstick &mdash; not that it competes with anything pretrained.
+    </p>
+    <p class="note">
+      <b>The WikiText-103 figure is not comparable to the 0.9416 above.</b> Our bits&#8209;per&#8209;byte is
+      measured on a held-out slice of the training mixture; WikiText&#8209;103 is encyclopedic prose
+      unlike anything the model saw. A higher number there is domain shift, not the two scorers
+      disagreeing &mdash; which is also why it sits outside the 1.133&#8211;1.223 band of the GPU sweep,
+      whose 12M-parameter models were scored on our own holdout.
+    </p>
+  </div>
+</section>
+
 <!-- METHOD NOTES -->
 <section class="panel card" id="pnl-method" role="tabpanel" aria-labelledby="tab-method" tabindex="0" hidden>
   <div class="pnl-head">
@@ -614,6 +666,16 @@ footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
 const BUDGET = 50000000;
 const RESULTS = [{"vocab_actual": 2048, "n_layers": 14, "embed_fraction": 0.04453335652778986, "bytes_per_token": 2.9900604591194644, "steps": 4091, "bits_per_byte": 1.2229737058628303, "token_ppl": 12.634337810027729, "reasoning_acc": 0.9333333333333333, "reasoning_choice_acc": null}, {"vocab_actual": 8192, "n_layers": 12, "embed_fraction": 0.17865009268345872, "bytes_per_token": 3.854276747050177, "steps": 4773, "bits_per_byte": 1.156806938887009, "token_ppl": 22.03489240710592, "reasoning_acc": 0.9583333333333334, "reasoning_choice_acc": null}, {"vocab_actual": 16384, "n_layers": 9, "embed_fraction": 0.36709498896519277, "bytes_per_token": 4.190152605816297, "steps": 6364, "bits_per_byte": 1.1331945125983391, "token_ppl": 26.937065889174203, "reasoning_acc": 0.9666666666666667, "reasoning_choice_acc": null}, {"vocab_actual": 32768, "n_layers": 4, "embed_fraction": 0.7229883282218741, "bytes_per_token": 4.423860587774831, "steps": 14318, "bits_per_byte": 1.1354583564058252, "token_ppl": 32.59460329845826, "reasoning_acc": 0.95, "reasoning_choice_acc": null}];
 const FLAGSHIP = {vocab:16384, params:48872576, n_layers:13, bits_per_byte:0.9416013547353811, reasoning_acc:0.99};
+
+/* Zero-shot lm-evaluation-harness results for the flagship checkpoint.
+   `chance` is 1/#choices: HellaSwag and ARC-Easy are 4-way, PIQA and
+   WinoGrande are 2-way. WinoGrande reports no acc_norm. */
+const BENCH = [
+  {task:'HellaSwag',  n:10042, chance:25, acc:26.7, accNorm:27.0},
+  {task:'ARC-Easy',   n:2376,  chance:25, acc:40.7, accNorm:36.9},
+  {task:'PIQA',       n:1838,  chance:50, acc:57.7, accNorm:56.0},
+  {task:'WinoGrande', n:1267,  chance:50, acc:48.2, accNorm:null}
+];
 
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id => document.getElementById(id);
@@ -964,6 +1026,53 @@ function buildFlagChart(){
   charts.flag.render();
 }
 
+function paintBench(){
+  const body = $('benchBody');
+  if (!body) return;
+  body.innerHTML = BENCH.map(b => {
+    const d = b.acc - b.chance;
+    const sign = d >= 0 ? '+' : '−';
+    return `<tr>
+      <td>${b.task}</td>
+      <td>${fmt(b.n)}</td>
+      <td>${b.chance}%</td>
+      <td>${b.acc.toFixed(1)}%</td>
+      <td>${b.accNorm==null?'&mdash;':b.accNorm.toFixed(1)+'%'}</td>
+      <td class="${d >= 5 ? 'best' : ''}">${sign}${Math.abs(d).toFixed(1)} pts</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildBenchChart(){
+  if (typeof ApexCharts === 'undefined') return;
+  const opts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'bar', height:360}),
+    series:[
+      {name:'Model accuracy', data:BENCH.map(b => b.acc)},
+      {name:'Chance', data:BENCH.map(b => b.chance)}
+    ],
+    // Chance is a reference baseline, not an entity, so it takes a neutral
+    // rather than spending a categorical hue on it.
+    colors:['#A82232', '#B5AFAB'],
+    plotOptions:{bar:{columnWidth:'56%', borderRadius:5, borderRadiusApplication:'end',
+      dataLabels:{position:'top'}}},
+    dataLabels:{enabled:true, enabledOnSeries:[0], formatter:v => v.toFixed(1)+'%',
+      offsetY:-20, style:{fontFamily:MONO, fontSize:'11.5px', fontWeight:700, colors:['#3E3E47']}},
+    xaxis:{
+      categories:BENCH.map(b => b.task),
+      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+      labels:{style:{fontFamily:FONT, fontSize:'12.5px', fontWeight:600, colors:'#3E3E47'}}
+    },
+    yaxis:{min:0, max:70, tickAmount:7,
+      title:{text:'zero-shot accuracy', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:600}},
+      labels:{style:{colors:'#6C6C78', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)+'%'}},
+    tooltip:Object.assign({}, baseOpts.tooltip, {y:{formatter:v => v.toFixed(1)+'%'}})
+  });
+  if (charts.bench){ charts.bench.destroy(); }
+  charts.bench = new ApexCharts($('chartBench'), opts);
+  charts.bench.render();
+}
+
 document.querySelectorAll('#sweepMode button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#sweepMode button').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
   buildSweepChart(b.dataset.view);
@@ -972,7 +1081,7 @@ document.querySelectorAll('#sweepMode button').forEach(b => b.addEventListener('
 /* ======================= tabs ======================= */
 (function(){
   const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
-  const built = {'pnl-sweep':false, 'pnl-trade':false, 'pnl-flag':false};
+  const built = {'pnl-sweep':false, 'pnl-trade':false, 'pnl-flag':false, 'pnl-bench':false};
 
   function activate(tab, focus){
     tabs.forEach(t => {
@@ -989,6 +1098,7 @@ document.querySelectorAll('#sweepMode button').forEach(b => b.addEventListener('
       if (id === 'pnl-sweep') buildSweepChart('both');
       if (id === 'pnl-trade') buildTradeChart();
       if (id === 'pnl-flag')  buildFlagChart();
+      if (id === 'pnl-bench') buildBenchChart();
     } else {
       // Apex measures its container on render; nudge it after an unhide.
       window.dispatchEvent(new Event('resize'));
@@ -1031,6 +1141,7 @@ $('btnCsv').addEventListener('click', e => {
 $('vocab').value = vocabToPos(DEFAULT_VOCAB);
 render(DEFAULT_VOCAB, 'force');
 paintResults();
+paintBench();
 
 window.addEventListener('load', () => {
   buildDepthChart();
