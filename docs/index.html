@@ -468,7 +468,8 @@ footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
       real text, compression and reasoning move <em>together</em> &mdash; both are best at the same
       vocabulary.
     </p>
-    <div class="chartbox" id="chartSweep"></div>
+    <div class="chartbox" id="chartSweepBpb" style="min-height:240px"></div>
+    <div class="chartbox" id="chartSweepAcc" style="min-height:240px;margin-top:20px"></div>
     <div class="tablewrap" style="margin-top:20px">
       <table id="resultsTable">
         <caption class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">GPU sweep results by vocabulary size</caption>
@@ -507,7 +508,8 @@ footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
       less text. A large vocabulary packs <b>4.42 bytes into every token</b> but leaves only four
       layers to think with.
     </p>
-    <div class="chartbox" id="chartTrade"></div>
+    <div class="chartbox" id="chartTradeLayers" style="min-height:240px"></div>
+    <div class="chartbox" id="chartTradeBytes" style="min-height:240px;margin-top:20px"></div>
     <p class="note warm">
       <b>Steps tell the same story from the other side.</b> The 32,768 configuration ran
       <b>14,318 steps</b> to the 2,048 configuration's 4,091 &mdash; not because it trained longer,
@@ -916,6 +918,13 @@ function moveDepthMarker(v){
   });
 }
 
+// Two independently-scaled metrics (bits/byte and reasoning accuracy) used to
+// share one chart on two y-axes. That made it easy to *look* like they move
+// together just by how the axis min/max were picked -- the "agreement" was
+// partly an artifact of axis choice, not just the data. They're honest as two
+// stacked single-axis charts instead: each one plots on its own real scale,
+// and the "best on both" annotation lines up at the same x in both, which is
+// the actual, checkable claim being made.
 function buildSweepChart(view){
   if (!RESULTS.length || typeof ApexCharts === 'undefined') return;
   const cats = RESULTS.map(r => fmt(r.vocab_actual));
@@ -923,85 +932,106 @@ function buildSweepChart(view){
   const bpb = RESULTS.map(r => +r.bits_per_byte.toFixed(4));
   const acc = RESULTS.map(r => +(r.reasoning_acc*100).toFixed(1));
 
-  const sBpb = {name:'Bits per byte', type:'line', data:bpb, color:'#A82232'};
-  const sAcc = {name:'Reasoning accuracy', type:'line', data:acc, color:'#C7832A'};
-  const series = view==='bpb' ? [sBpb] : view==='acc' ? [sAcc] : [sBpb, sAcc];
+  const showBpb = view !== 'acc';
+  const showAcc = view !== 'bpb';
+  $('chartSweepBpb').style.display = showBpb ? '' : 'none';
+  $('chartSweepAcc').style.display = showAcc ? '' : 'none';
+  if (!showBpb && charts.sweepBpb){ charts.sweepBpb.destroy(); charts.sweepBpb = null; }
+  if (!showAcc && charts.sweepAcc){ charts.sweepAcc.destroy(); charts.sweepAcc = null; }
 
-  const yBpb = {
-    seriesName:'Bits per byte', min:1.10, max:1.25, tickAmount:5,
-    title:{text:'bits / byte — lower is better', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
-    labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(3)}
+  const xaxisBase = {
+    categories:cats,
+    title:{text:'vocabulary size (tokens) — layer count in tooltip and table', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+    axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+    labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
   };
-  const yAcc = {
-    seriesName:'Reasoning accuracy', opposite: view!=='acc', min:90, max:100, tickAmount:5,
-    title:{text:'reasoning accuracy', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
-    labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)+'%'}
-  };
-
-  const opts = Object.assign({}, baseOpts, {
-    chart: Object.assign({}, baseOpts.chart, {type:'line', height:360}),
-    series,
-    stroke:{width:3, curve:'straight'},
-    markers:{size:6, strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
-    xaxis:{
-      categories:cats,
-      title:{text:'vocabulary size (tokens) — layer count in tooltip and table', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
-      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
-      labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
-    },
-    yaxis: view==='bpb' ? [yBpb] : view==='acc' ? [yAcc] : [yBpb, yAcc],
-    annotations:{
-      xaxis:[{
-        x: fmt(16384), borderColor:'#17794E', strokeDashArray:5,
-        label:{text:'best on both', orientation:'horizontal', borderColor:'#17794E',
-          style:{background:'#17794E', color:'#fff', fontSize:'11px', fontWeight:600, padding:{left:8,right:8,top:3,bottom:3}}}
-      }]
-    },
-    tooltip: Object.assign({}, baseOpts.tooltip, {
-      y:{formatter:(v,{seriesIndex,w}) => {
-        const nm = w.config.series[seriesIndex].name;
-        return nm === 'Bits per byte' ? v.toFixed(4) + ' bits/byte' : v.toFixed(1) + '%';
-      }},
-      x:{formatter:(v,{dataPointIndex}) => v + ' tokens · ' + layerLabels[dataPointIndex]}
-    })
+  const marker = () => ({
+    x: fmt(16384), borderColor:'#17794E', strokeDashArray:5,
+    label:{text:'best on both', orientation:'horizontal', borderColor:'#17794E',
+      style:{background:'#17794E', color:'#fff', fontSize:'11px', fontWeight:600, padding:{left:8,right:8,top:3,bottom:3}}}
   });
+  const tooltipX = {x:{formatter:(v,{dataPointIndex}) => v + ' tokens · ' + layerLabels[dataPointIndex]}};
 
-  if (charts.sweep){ charts.sweep.destroy(); }
-  charts.sweep = new ApexCharts($('chartSweep'), opts);
-  charts.sweep.render();
+  if (showBpb){
+    const opts = Object.assign({}, baseOpts, {
+      chart: Object.assign({}, baseOpts.chart, {type:'line', height:240}),
+      series:[{name:'Bits per byte', data:bpb, color:'#A82232'}],
+      stroke:{width:3, curve:'straight'},
+      markers:{size:6, strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+      xaxis: xaxisBase,
+      yaxis:{min:1.10, max:1.25, tickAmount:5,
+        title:{text:'bits / byte — lower is better', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
+        labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(3)}},
+      annotations:{xaxis:[marker()]},
+      tooltip: Object.assign({}, baseOpts.tooltip, {y:{formatter:v => v.toFixed(4) + ' bits/byte'}}, tooltipX)
+    });
+    if (charts.sweepBpb){ charts.sweepBpb.destroy(); }
+    charts.sweepBpb = new ApexCharts($('chartSweepBpb'), opts);
+    charts.sweepBpb.render();
+  }
+
+  if (showAcc){
+    const opts = Object.assign({}, baseOpts, {
+      chart: Object.assign({}, baseOpts.chart, {type:'line', height:240}),
+      series:[{name:'Reasoning accuracy', data:acc, color:'#C7832A'}],
+      stroke:{width:3, curve:'straight'},
+      markers:{size:6, strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+      xaxis: xaxisBase,
+      yaxis:{min:90, max:100, tickAmount:5,
+        title:{text:'reasoning accuracy', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
+        labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)+'%'}},
+      annotations:{xaxis:[marker()]},
+      tooltip: Object.assign({}, baseOpts.tooltip, {y:{formatter:v => v.toFixed(1) + '%'}}, tooltipX)
+    });
+    if (charts.sweepAcc){ charts.sweepAcc.destroy(); }
+    charts.sweepAcc = new ApexCharts($('chartSweepAcc'), opts);
+    charts.sweepAcc.render();
+  }
 }
 
+// Same reasoning as buildSweepChart: layers and bytes/token used to share a
+// bar+line combo chart on two independently-scaled axes. Stacked single-axis
+// charts show the same tradeoff without letting axis choice exaggerate or
+// flatter how strongly the two move together.
 function buildTradeChart(){
   if (!RESULTS.length || typeof ApexCharts === 'undefined') return;
   const cats = RESULTS.map(r => fmt(r.vocab_actual));
-  const opts = Object.assign({}, baseOpts, {
-    chart: Object.assign({}, baseOpts.chart, {type:'line', height:360, stacked:false}),
-    series:[
-      {name:'Transformer layers', type:'column', data:RESULTS.map(r => r.n_layers), color:'#A82232'},
-      {name:'Bytes per token', type:'line', data:RESULTS.map(r => +r.bytes_per_token.toFixed(2)), color:'#C7832A'}
-    ],
-    stroke:{width:[0,3], curve:'straight'},
-    markers:{size:[0,6], strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+  const xaxisBase = {
+    categories:cats,
+    title:{text:'vocabulary size', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+    axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+    labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
+  };
+
+  const layersOpts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'bar', height:240}),
+    series:[{name:'Transformer layers', data:RESULTS.map(r => r.n_layers), color:'#A82232'}],
     plotOptions:{bar:{columnWidth:'42%', borderRadius:6, borderRadiusApplication:'end'}},
-    fill:{opacity:[0.9,1]},
-    xaxis:{
-      categories:cats,
-      title:{text:'vocabulary size', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
-      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
-      labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
-    },
-    yaxis:[
-      {seriesName:'Transformer layers', min:0, max:16, tickAmount:4,
-       title:{text:'transformer layers', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
-       labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)}},
-      {seriesName:'Bytes per token', opposite:true, min:2.5, max:4.75, tickAmount:4,
-       title:{text:'bytes per token', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
-       labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(2)}}
-    ]
+    fill:{opacity:0.9},
+    xaxis: xaxisBase,
+    yaxis:{min:0, max:16, tickAmount:4,
+      title:{text:'transformer layers', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
+      labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)}},
+    tooltip: Object.assign({}, baseOpts.tooltip, {y:{formatter:v => v.toFixed(0) + ' layers'}})
   });
-  if (charts.trade){ charts.trade.destroy(); }
-  charts.trade = new ApexCharts($('chartTrade'), opts);
-  charts.trade.render();
+  if (charts.tradeLayers){ charts.tradeLayers.destroy(); }
+  charts.tradeLayers = new ApexCharts($('chartTradeLayers'), layersOpts);
+  charts.tradeLayers.render();
+
+  const bytesOpts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'line', height:240}),
+    series:[{name:'Bytes per token', data:RESULTS.map(r => +r.bytes_per_token.toFixed(2)), color:'#C7832A'}],
+    stroke:{width:3, curve:'straight'},
+    markers:{size:6, strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+    xaxis: xaxisBase,
+    yaxis:{min:2.5, max:4.75, tickAmount:4,
+      title:{text:'bytes per token', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
+      labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(2)}},
+    tooltip: Object.assign({}, baseOpts.tooltip, {y:{formatter:v => v.toFixed(2) + ' bytes/token'}})
+  });
+  if (charts.tradeBytes){ charts.tradeBytes.destroy(); }
+  charts.tradeBytes = new ApexCharts($('chartTradeBytes'), bytesOpts);
+  charts.tradeBytes.render();
 }
 
 function buildFlagChart(){

@@ -213,7 +213,8 @@ python eval/run_harness_eval.py --checkpoint runs/flagship/ckpt.pt --out results
 ```
 
 **Results**, run zero-shot against the real flagship checkpoint (`notebooks/parsimony_train.ipynb`,
-final cell, Kaggle T4):
+final cell, Kaggle T4). Raw output (per-metric stderr included) is in
+[`results/harness_eval.json`](results/harness_eval.json):
 
 | Task | acc | acc_norm |
 |---|---:|---:|

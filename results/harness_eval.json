@@ -1,0 +1,59 @@
+{
+  "n_params": 48872576,
+  "checkpoint": "runs/flagship/ckpt.pt",
+  "tasks": [
+    "hellaswag",
+    "arc_easy",
+    "piqa",
+    "winogrande",
+    "wikitext103"
+  ],
+  "num_fewshot": 0,
+  "results": {
+    "hellaswag": {
+      "name": "hellaswag",
+      "alias": "hellaswag",
+      "sample_len": 10042,
+      "acc,none": 0.26687910774746065,
+      "acc_stderr,none": 0.004414246720076327,
+      "acc_norm,none": 0.27016530571599284,
+      "acc_norm_stderr,none": 0.004431375549911545
+    },
+    "arc_easy": {
+      "name": "arc_easy",
+      "alias": "arc_easy",
+      "sample_len": 2376,
+      "acc,none": 0.4065656565656566,
+      "acc_stderr,none": 0.01007905641922357,
+      "acc_norm,none": 0.3691077441077441,
+      "acc_norm_stderr,none": 0.009901987410242688
+    },
+    "piqa": {
+      "name": "piqa",
+      "alias": "piqa",
+      "sample_len": 1838,
+      "acc,none": 0.5772578890097932,
+      "acc_stderr,none": 0.01152572136157213,
+      "acc_norm,none": 0.559847660500544,
+      "acc_norm_stderr,none": 0.011581954727227383
+    },
+    "winogrande": {
+      "name": "winogrande",
+      "alias": "winogrande",
+      "sample_len": 1267,
+      "acc,none": 0.48145224940805054,
+      "acc_stderr,none": 0.014042813708888347
+    },
+    "wikitext103": {
+      "name": "wikitext103",
+      "alias": "wikitext103",
+      "sample_len": 62,
+      "word_perplexity,none": 126.51736625204155,
+      "word_perplexity_stderr,none": "N/A",
+      "byte_perplexity,none": 2.472364987797186,
+      "byte_perplexity_stderr,none": "N/A",
+      "bits_per_byte,none": 1.3058917396886427,
+      "bits_per_byte_stderr,none": "N/A"
+    }
+  }
+}
