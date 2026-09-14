@@ -212,18 +212,35 @@ pip install lm-eval
 python eval/run_harness_eval.py --checkpoint runs/flagship/ckpt.pt --out results/harness_eval.json
 ```
 
-**Results:** *pending* — the flagship checkpoint lives only on Kaggle (the training GPU, per
-"Compute and hardware" below), so this is run as the final cell of
-`notebooks/parsimony_train.ipynb` rather than from a git checkout. Numbers land in
-`results/harness_eval.json` and get pasted into the table below once that run completes.
+**Results**, run zero-shot against the real flagship checkpoint (`notebooks/parsimony_train.ipynb`,
+final cell, Kaggle T4):
 
-| Task | Metric | Score |
-|---|---|---|
-| HellaSwag | acc_norm | — |
-| ARC-Easy | acc_norm | — |
-| PIQA | acc_norm | — |
-| WinoGrande | acc | — |
-| WikiText-103 | bits_per_byte | — |
+| Task | acc | acc_norm |
+|---|---:|---:|
+| HellaSwag (n=10,042) | 26.7% | 27.0% |
+| ARC-Easy (n=2,376) | 40.7% | 36.9% |
+| PIQA (n=1,838) | 57.7% | 56.0% |
+| WinoGrande (n=1,267) | 48.2% | — |
+
+| WikiText-103, test split (n=62 docs) | Score |
+|---|---:|
+| bits_per_byte | 1.306 |
+| byte_perplexity | 2.472 |
+| word_perplexity | 126.5 |
+
+Read against chance (HellaSwag and ARC-Easy are 4-way, so 25%; PIQA and WinoGrande are 2-way, so
+50%): the model is at chance on WinoGrande and barely above it on HellaSwag, gets real traction on
+PIQA, and does best on ARC-Easy — roughly the order of "how much does this question depend on
+world knowledge vs. commonsense narrative inference," which tracks what a 49M-parameter,
+from-scratch, no-pretraining model should be able to pick up from ~295M training tokens.
+
+The WikiText-103 bits-per-byte (1.306) is **not** directly comparable to the 0.9416 this project's
+own script reports for the same checkpoint, and the gap is not a disagreement between the two
+scorers. Our figure is measured on a held-out slice of the training mixture (TinyStories,
+FineWeb-Edu, reasoning traces); WikiText-103 is encyclopedic prose unlike anything the model was
+trained on, so a higher bits-per-byte there is exactly what domain shift predicts. It is also
+outside the 1.133–1.223 band the GPU vocabulary sweep spans, for the same reason — those are
+12M-parameter models scored on our own holdout, not on WikiText.
 
 ## Reproducing
 
@@ -275,10 +292,10 @@ above against the resulting checkpoint.
 - No pretrained weights, no distillation, no fine-tuning — per Track 01 rules. Absolute quality
   is therefore far below any model you would actually deploy; the comparison between rows is
   the result, not the rows themselves.
-- The standard-benchmark evaluation (HellaSwag / ARC-Easy / PIQA / WinoGrande / WikiText-103, see
-  "Evaluation" above) is wired up and adapter-tested, but the numbers in that section are pending
-  a run against the real flagship checkpoint on Kaggle — this README will be updated with real
-  scores before the submission deadline.
+- The standard-benchmark scores (see "Evaluation" above) are all zero-shot and all near or only
+  modestly above chance, which is expected at this scale and this little data — they demonstrate
+  the harness integration works and place this model honestly against a common yardstick, not
+  that it's competitive with anything pretrained.
 
 ## Repository
 

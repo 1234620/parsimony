@@ -98,7 +98,24 @@ class ParsimonyLM(TemplateLM):
                     "Could not find a tokenizer json (looked for data/tok_*.json). "
                     "Pass tokenizer=<path to the .json file> explicitly."
                 )
-            tokenizer = str(candidates[0])
+            if len(candidates) == 1:
+                tokenizer = str(candidates[0])
+            else:
+                # A vocabulary-sweep run (or its copied `data/`) can leave several
+                # tok_*.json files side by side -- e.g. this project's own sweep
+                # output does, since MODE=="flagship" copies the whole sweep's
+                # `data/` wholesale. Picking "the first one alphabetically" would
+                # silently score with the wrong vocabulary, so match by actual
+                # vocab size against the checkpoint's own config instead.
+                matches = [c for c in candidates if load_tokenizer(str(c)).get_vocab_size() == self.cfg.vocab_size]
+                if len(matches) == 1:
+                    tokenizer = str(matches[0])
+                else:
+                    raise FileNotFoundError(
+                        f"Found {len(candidates)} tokenizer files ({[c.name for c in candidates]}) "
+                        f"and {'none' if not matches else 'more than one'} match this checkpoint's "
+                        f"vocab_size={self.cfg.vocab_size}. Pass tokenizer=<path to the right .json file> explicitly."
+                    )
         self.tokenizer = load_tokenizer(tokenizer)
 
         self.batch_size = int(batch_size)
