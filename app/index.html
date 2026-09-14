@@ -6,150 +6,321 @@
 <title>Parsimony</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.45.2/apexcharts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <style>
 :root{
-  --ink:#10131C; --panel:#171B27; --panel-2:#1E2331; --line:#2A3142;
-  --text:#E6E8F0; --muted:#8A92A8; --dim:#5C6478;
-  --embed:#6B7A99;      /* cold: the lookup table */
-  --compute:#E8A33D;    /* warm: live capacity */
-  --measure:#4FB3A5;    /* measured results */
-  --maxw:1080px;
-  color-scheme:dark;
+  --canvas:#F6F6F8;
+  --card:#FFFFFF;
+  --line:#E7E7EC;
+  --line-soft:#F1F1F4;
+  --ink:#17171B;
+  --ink-2:#3E3E47;
+  --muted:#6C6C78;
+  --dim:#8E8E9C;
+  --brand:#7E1620;
+  --brand-hi:#9C1C29;
+  --brand-soft:#FDF2F3;
+  --brand-line:#F2D4D8;
+  --s1:#A82232;   /* categorical slot 1 — brand burgundy */
+  --s2:#C7832A;   /* categorical slot 2 — gold */
+  --good:#17794E; /* reserved status: best measured value */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(16,16,20,.04);
+  --sh-2:0 1px 3px rgba(16,16,20,.05),0 10px 28px -14px rgba(16,16,20,.14);
+  --space-1:8px; --space-2:12px; --space-3:16px; --space-4:24px; --space-5:32px;
+  --maxw:1240px;
+  color-scheme:light;
 }
 *{box-sizing:border-box}
 body{
-  margin:0; background:var(--ink); color:var(--text);
-  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  margin:0; background:var(--canvas); color:var(--ink);
+  font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:var(--maxw); margin:0 auto; padding:0 28px}
-.mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace; font-variant-numeric:tabular-nums}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px 64px}
+.mono{font-family:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace; font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--brand-hi); outline-offset:2px; border-radius:4px}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-1)}
 
 /* ---------- masthead ---------- */
-header{padding:56px 0 0}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:20px 0 22px; flex-wrap:wrap}
+.brandmark{display:flex; align-items:center; gap:10px}
+.brandmark .glyph{
+  width:38px; height:38px; border-radius:11px; flex:none; display:grid; place-items:center;
+  background:linear-gradient(150deg,var(--brand-hi),var(--brand));
+  box-shadow:0 1px 2px rgba(126,22,32,.3), inset 0 1px 0 rgba(255,255,255,.16);
+}
+.brandmark .glyph svg{width:21px; height:21px; fill:#fff}
+.brandmark a{text-decoration:none; color:inherit; display:flex; align-items:center; gap:10px;
+  border-radius:11px; transition:opacity .18s ease}
+.brandmark a:hover{opacity:.82}
+.brandmark .name{font-size:15px; font-weight:800; letter-spacing:-.01em; line-height:1.15}
+.brandmark .sub{font-size:11.5px; color:var(--muted); line-height:1.3}
+.topactions{display:flex; gap:10px; flex-wrap:wrap}
+
+/* ---------- buttons ---------- */
+.btn{
+  font:inherit; font-size:13px; font-weight:600; letter-spacing:-.005em;
+  min-height:40px; padding:0 15px; border-radius:var(--r-sm); cursor:pointer;
+  display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink-2); text-decoration:none;
+  transition:background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.btn:hover{border-color:#D4D4DD; background:#FBFBFC; transform:translateY(-1px); box-shadow:var(--sh-1)}
+.btn:active{transform:translateY(0)}
+.btn svg{width:17px; height:17px; fill:currentColor; flex:none}
+.btn-primary{background:var(--brand); border-color:var(--brand); color:#fff}
+.btn-primary:hover{background:var(--brand-hi); border-color:var(--brand-hi); color:#fff}
+
+/* ---------- hero ---------- */
+.hero{padding:6px 0 28px}
 .eyebrow{
-  font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--dim);
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--brand); font-weight:600;
+  background:var(--brand-soft); border:1px solid var(--brand-line);
+  border-radius:var(--r-pill); padding:5px 12px;
 }
-h1{
-  font-size:clamp(40px,7vw,68px); line-height:.98; letter-spacing:-.035em;
-  font-weight:700; margin:16px 0 0; text-wrap:balance;
-}
-.thesis{
-  margin:22px 0 0; max-width:62ch; font-size:19px; color:#C3C9D8; line-height:1.55;
-}
-.thesis strong{color:var(--text); font-weight:600}
-.rule{height:1px; background:var(--line); margin:44px 0}
+.eyebrow .eb-ico{width:13px; height:13px; fill:var(--brand); flex:none}
+h1{font-size:clamp(32px,4.4vw,48px); line-height:1.08; letter-spacing:-.032em; font-weight:800;
+   margin:18px 0 0; text-wrap:balance; max-width:26ch}
+.thesis{margin:18px 0 0; max-width:66ch; font-size:16px; color:var(--ink-2); line-height:1.65}
+.thesis strong{color:var(--ink); font-weight:700}
+.thesis + .thesis{margin-top:14px}
 
-/* ---------- instrument ---------- */
-.instrument{background:var(--panel); border:1px solid var(--line); border-radius:4px; overflow:hidden}
-.inst-head{
-  display:flex; justify-content:space-between; align-items:baseline; gap:16px;
-  padding:16px 22px; border-bottom:1px solid var(--line); background:var(--panel-2); flex-wrap:wrap;
+/* Justified body copy reads better at paragraph length; skip it on narrow
+   screens, where justification opens rivers instead of a clean right edge. */
+@media (min-width:640px){
+  .thesis, .lede, .note, .pnl-head p{
+    text-align:justify; text-justify:inter-word; hyphens:auto; text-align-last:left;
+  }
 }
-.inst-title{font-size:13px; font-weight:600; letter-spacing:.02em}
-.inst-sub{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted)}
-.inst-body{padding:26px 22px 28px}
 
-.sliderow{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:26px}
-label.slab{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase}
+/* ---------- control panel ---------- */
+.panel-head{display:flex; align-items:center; justify-content:space-between; gap:var(--space-3);
+  padding:15px 22px; border-bottom:1px solid var(--line-soft); flex-wrap:wrap}
+.panel-label{font-size:11.5px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--brand)}
+.ctrl-grid{display:grid; grid-template-columns:minmax(300px,1.3fr) minmax(230px,1fr) minmax(150px,.6fr);
+  gap:var(--space-4) var(--space-5); padding:20px 22px 22px}
+.field{min-width:0}
+.flabel{font-size:12px; font-weight:700; color:var(--ink); margin-bottom:9px;
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.flabel .val{font-family:"JetBrains Mono",monospace; font-size:15px; font-weight:700; color:var(--brand)}
 input[type=range]{
-  -webkit-appearance:none; appearance:none; flex:1; min-width:220px; height:3px;
-  background:linear-gradient(90deg,var(--embed),var(--compute)); border-radius:2px; outline:none;
+  -webkit-appearance:none; appearance:none; width:100%; height:6px; margin:8px 0 0;
+  background:linear-gradient(90deg,var(--s1),var(--s2)); border-radius:var(--r-pill); outline:none; cursor:pointer;
 }
 input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
-  background:var(--text); border:3px solid var(--ink); cursor:pointer;
-  box-shadow:0 0 0 1px var(--line);
+  -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#fff;
+  border:3px solid var(--brand); cursor:pointer; box-shadow:0 1px 5px rgba(16,16,20,.22);
+  transition:transform .16s ease, box-shadow .16s ease;
 }
-input[type=range]::-moz-range-thumb{
-  width:18px; height:18px; border-radius:50%; background:var(--text);
-  border:3px solid var(--ink); cursor:pointer;
-}
-input[type=range]:focus-visible{box-shadow:0 0 0 3px rgba(232,163,61,.45)}
-.vocabval{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; min-width:5.5ch}
-.preset{
-  font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted);
-  background:transparent; border:1px solid var(--line); border-radius:3px;
-  padding:5px 9px; cursor:pointer;
-}
-.preset:hover{border-color:var(--compute); color:var(--text)}
-.preset:focus-visible{outline:2px solid var(--compute); outline-offset:1px}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.14); box-shadow:0 2px 9px rgba(126,22,32,.3)}
+input[type=range]::-moz-range-thumb{width:20px; height:20px; border-radius:50%; background:#fff;
+  border:3px solid var(--brand); cursor:pointer; box-shadow:0 1px 5px rgba(16,16,20,.22)}
+.ticks{display:flex; justify-content:space-between; margin-top:9px;
+  font-family:"JetBrains Mono",monospace; font-size:10.5px; color:var(--dim)}
 
-/* allocation bar */
-.bar{display:flex; height:46px; border-radius:3px; overflow:hidden; border:1px solid var(--line)}
-.seg{display:flex; align-items:center; padding:0 12px; font-family:"IBM Plex Mono",monospace;
-     font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden;
-     transition:width .28s cubic-bezier(.4,0,.2,1)}
-.seg-embed{background:var(--embed); color:#0E1119}
-.seg-compute{background:var(--compute); color:#2A1B05}
-.barkey{display:flex; gap:22px; margin-top:11px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); flex-wrap:wrap}
-.key{display:flex; align-items:center; gap:7px}
-.swatch{width:10px; height:10px; border-radius:2px; flex:none}
-
-/* layer stack */
-.stackwrap{margin-top:30px}
-.stacklab{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);
-          letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px}
-.stack{display:flex; flex-wrap:wrap; gap:5px; align-items:flex-end; min-height:52px}
-.layer{
-  width:26px; height:26px; background:var(--compute); border-radius:2px;
-  animation:pop .22s cubic-bezier(.34,1.4,.64,1) both;
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  font:inherit; font-size:12.5px; font-weight:500; color:var(--ink-2);
+  min-height:34px; padding:0 14px; border-radius:var(--r-pill);
+  border:1px solid var(--line); background:var(--card); cursor:pointer;
+  display:inline-flex; align-items:center;
+  transition:background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
 }
+.chip:hover{border-color:#D4D4DD; background:#FBFBFC; transform:translateY(-1px)}
+.chip[aria-pressed="true"]{background:var(--brand-soft); border-color:var(--brand-line); color:var(--brand); font-weight:600}
+
+/* ---------- insights ---------- */
+.insights{margin-top:var(--space-4); background:var(--brand-soft);
+  border:1px solid var(--brand-line); border-radius:var(--r-lg); overflow:hidden}
+.ins-head{width:100%; font:inherit; background:none; border:0; cursor:pointer;
+  display:flex; align-items:center; gap:9px; padding:14px 20px; text-align:left}
+.ins-head svg.bulb{width:18px; height:18px; fill:var(--brand); flex:none}
+.ins-title{font-size:14px; font-weight:700; color:var(--brand); flex:1}
+.ins-head svg.chev{width:17px; height:17px; fill:var(--brand); flex:none; transition:transform .25s ease}
+.ins-head[aria-expanded="false"] svg.chev{transform:rotate(180deg)}
+.ins-body{overflow:hidden}
+.ins-body ul{margin:0; padding:0 20px 15px 39px; list-style:none}
+.ins-body li{position:relative; font-size:14px; color:#5E1219; line-height:1.55; padding:2px 0}
+.ins-body li::before{content:""; position:absolute; left:-14px; top:11px; width:5px; height:5px;
+  border-radius:50%; background:var(--brand)}
+.ins-body li b{color:var(--brand); font-weight:700}
+
+/* ---------- KPI row ---------- */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:var(--space-3); margin-top:var(--space-4)}
+.kpi{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md); padding:16px 18px;
+  transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease}
+.kpi:hover{border-color:#D9D9E1; box-shadow:var(--sh-2); transform:translateY(-2px)}
+.kpi dt{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 7px}
+.kpi dd{margin:0; font-family:"JetBrains Mono",monospace; font-size:24px; font-weight:700; letter-spacing:-.02em; line-height:1.1}
+.kpi dd small{font-size:12px; font-weight:500; color:var(--dim); letter-spacing:0}
+.kpi .spark{margin-top:9px; height:4px; border-radius:var(--r-pill); background:var(--line-soft); overflow:hidden}
+.kpi .spark i{display:block; height:100%; border-radius:var(--r-pill); background:var(--brand);
+  transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+/* ---------- tabs ---------- */
+.tabbar{display:flex; gap:4px; margin-top:var(--space-4); padding:6px; background:var(--card);
+  border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-1);
+  overflow-x:auto; scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{font:inherit; font-size:13.5px; font-weight:600; color:var(--muted); white-space:nowrap;
+  min-height:40px; padding:0 18px; border:0; border-radius:10px; background:transparent; cursor:pointer;
+  transition:background-color .2s ease, color .2s ease}
+.tab:hover{background:var(--line-soft); color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--brand); color:#fff}
+.tab[aria-selected="true"]:hover{background:var(--brand-hi)}
+
+.panel{margin-top:var(--space-3)}
+.panel[hidden]{display:none}
+.pnl-head{display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-4);
+  padding:20px 24px 16px; flex-wrap:wrap}
+.pnl-head h2{font-size:19px; font-weight:700; letter-spacing:-.02em; margin:0}
+.pnl-head p{margin:6px 0 0; font-size:13.5px; color:var(--muted); max-width:58ch; line-height:1.55}
+.pnl-tools{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.pnl-body{padding:0 24px 24px}
+
+/* segmented control */
+.seg-ctl{display:inline-flex; gap:3px; padding:3px; background:var(--line-soft);
+  border:1px solid var(--line); border-radius:10px}
+.seg-ctl button{font:inherit; font-size:12.5px; font-weight:600; color:var(--muted);
+  min-height:32px; padding:0 13px; border:0; border-radius:7px; background:transparent; cursor:pointer;
+  transition:background-color .18s ease, color .18s ease}
+.seg-ctl button:hover{color:var(--ink)}
+.seg-ctl button[aria-pressed="true"]{background:var(--brand-soft); color:var(--brand);
+  box-shadow:0 1px 2px rgba(16,16,20,.06)}
+
+/* ---------- allocation bar + stack ---------- */
+.alloc-bar{display:flex; height:56px; border-radius:var(--r-md); overflow:hidden;
+  border:1px solid var(--line); gap:2px; background:var(--card)}
+.seg{display:flex; align-items:center; padding:0 14px; font-family:"JetBrains Mono",monospace;
+  font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden;
+  transition:width .32s cubic-bezier(.4,0,.2,1)}
+.seg-embed{background:var(--s1); color:#FCEFF0}
+.seg-compute{background:var(--s2); color:#2B1A02}
+.barkey{display:flex; gap:22px; margin-top:12px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
+.key{display:flex; align-items:center; gap:8px}
+.swatch{width:10px; height:10px; border-radius:3px; flex:none}
+
+.stackwrap{margin-top:26px}
+.stacklab{font-size:12px; font-weight:600; color:var(--muted); margin-bottom:11px}
+.stack{display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end; min-height:56px}
+.layer{width:28px; height:28px; background:var(--s2); border-radius:6px;
+  animation:pop .24s cubic-bezier(.34,1.4,.64,1) both}
 .layer.ghost{background:transparent; border:1px dashed var(--line)}
 @keyframes pop{from{transform:scale(.4); opacity:0} to{transform:scale(1); opacity:1}}
-@media (prefers-reduced-motion:reduce){
-  .layer{animation:none}
-  .seg{transition:none}
-}
 
-/* readout grid */
-.readout{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
-  gap:1px; background:var(--line); border:1px solid var(--line);
-  border-radius:3px; margin-top:30px; overflow:hidden;
-}
-.cell{background:var(--panel); padding:14px 16px}
-.cell dt{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em;
-         text-transform:uppercase; color:var(--dim); margin:0 0 5px}
-.cell dd{margin:0; font-family:"IBM Plex Mono",monospace; font-size:19px; font-weight:600}
-.cell dd small{font-size:12px; font-weight:400; color:var(--muted)}
-
-/* ---------- sections ---------- */
-section{margin:64px 0 0}
-h2{font-size:15px; font-weight:600; letter-spacing:.02em; margin:0 0 6px}
-.sectnote{color:var(--muted); font-size:15px; max-width:64ch; margin:0 0 22px}
-
-table{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-size:13px}
-.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:3px}
-th,td{padding:10px 14px; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-md)}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th,td{padding:12px 15px; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{text-align:left}
-thead th{background:var(--panel-2); color:var(--muted); font-weight:500;
-         font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid var(--line)}
-tbody tr{background:var(--panel)}
-tbody tr+tr td{border-top:1px solid var(--line)}
-td.best{color:var(--measure); font-weight:600}
-.win{color:var(--measure)}
+tbody td{font-family:"JetBrains Mono",monospace}
+thead th{background:#FAFAFB; color:var(--muted); font-weight:600; font-size:11px;
+  letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--line)}
+tbody tr{background:var(--card); transition:background-color .16s ease}
+tbody tr:hover{background:#FAFAFB}
+tbody tr+tr td{border-top:1px solid var(--line-soft)}
+td.best{color:var(--good); font-weight:700}
+.arch-table tbody td{font-family:inherit}
+.arch-table tbody td:first-child{font-weight:600; color:var(--ink)}
 
-.chartbox{background:var(--panel); border:1px solid var(--line); border-radius:3px; padding:20px; margin-top:18px}
-.note{
-  border-left:2px solid var(--measure); padding:2px 0 2px 16px; margin:22px 0 0;
-  color:#C3C9D8; font-size:15px; max-width:66ch;
+/* ---------- prose notes ---------- */
+.note{border-left:3px solid var(--s1); padding:2px 0 2px 18px; margin:24px 0 0;
+  color:var(--ink-2); font-size:14.5px; max-width:68ch; line-height:1.65}
+.note:first-child{margin-top:0}
+.note b{color:var(--ink); font-weight:700}
+.note.warm{border-left-color:var(--s2)}
+.note.brand{border-left-color:var(--brand)}
+.note.good{border-left-color:var(--good)}
+code{font-family:"JetBrains Mono",monospace; font-size:.88em; background:var(--line-soft);
+  padding:2px 6px; border-radius:5px; color:var(--ink-2)}
+.chartbox{margin-top:4px; min-height:340px}
+.lede{margin:0 0 20px; font-size:15px; color:var(--ink-2); max-width:66ch; line-height:1.65}
+
+/* flagship */
+.flagrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--space-3); margin-bottom:var(--space-4)}
+.flagcell{border:1px solid var(--line); border-radius:var(--r-md); padding:15px 17px; background:#FAFAFB}
+.flagcell dt{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 6px}
+.flagcell dd{margin:0; font-family:"JetBrains Mono",monospace; font-size:21px; font-weight:700; letter-spacing:-.02em}
+
+footer{margin:48px 0 0; padding-top:22px; border-top:1px solid var(--line);
+  color:var(--dim); font-size:12.5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+
+/* ---------- reveal + motion prefs ---------- */
+.reveal{opacity:0}
+.revealed{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important}
+  .reveal{opacity:1 !important; transform:none !important}
+  .layer{animation:none}
 }
-.note b{color:var(--text)}
-code{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--panel-2);
-     padding:1.5px 5px; border-radius:2px; color:#D8DEEE}
-footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
-       color:var(--dim); font-size:12.5px; font-family:"IBM Plex Mono",monospace}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  .ctrl-grid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:0 16px 48px}
+  .pnl-head,.panel-head{padding-left:16px; padding-right:16px}
+  .pnl-body{padding:0 16px 20px}
+  .ctrl-grid{padding:18px 16px 20px}
+  .kpi dd{font-size:21px}
+  .thesis{font-size:15px}
+}
 </style>
+<noscript><style>.reveal{opacity:1 !important} .panel[hidden]{display:block !important}</style></noscript>
 
 </head>
 <body>
 <div class="wrap">
-<header>
-  <div class="eyebrow">GIBC V2 &middot; Track 01 &middot; foundational LLM</div>
-  <h1>Half your model is a<br>dictionary. A third<br>is the right answer.</h1>
+
+<!-- Phosphor Icons (regular, 256x256) — one icon family across the page.
+     Inlined as a sprite so the page has no icon-font or CDN dependency. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="ph-scales" viewBox="0 0 256 256"><path d="M239.43,133l-32-80h0a8,8,0,0,0-9.16-4.84L136,62V40a8,8,0,0,0-16,0V65.58L54.26,80.19A8,8,0,0,0,48.57,85h0v.06L16.57,165a7.92,7.92,0,0,0-.57,3c0,23.31,24.54,32,40,32s40-8.69,40-32a7.92,7.92,0,0,0-.57-3L66.92,93.77,120,82V208H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16H136V78.42L187,67.1,160.57,133a7.92,7.92,0,0,0-.57,3c0,23.31,24.54,32,40,32s40-8.69,40-32A7.92,7.92,0,0,0,239.43,133ZM56,184c-7.53,0-22.76-3.61-23.93-14.64L56,109.54l23.93,59.82C78.76,180.39,63.53,184,56,184Zm144-32c-7.53,0-22.76-3.61-23.93-14.64L200,77.54l23.93,59.82C222.76,148.39,207.53,152,200,152Z"/></symbol>
+<symbol id="ph-download" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></symbol>
+<symbol id="ph-github" viewBox="0 0 256 256"><path d="M208.31,75.68A59.78,59.78,0,0,0,202.93,28,8,8,0,0,0,196,24a59.75,59.75,0,0,0-48,24H124A59.75,59.75,0,0,0,76,24a8,8,0,0,0-6.93,4,59.78,59.78,0,0,0-5.38,47.68A58.14,58.14,0,0,0,56,104v8a56.06,56.06,0,0,0,48.44,55.47A39.8,39.8,0,0,0,96,192v8H72a24,24,0,0,1-24-24A40,40,0,0,0,8,136a8,8,0,0,0,0,16,24,24,0,0,1,24,24,40,40,0,0,0,40,40H96v16a8,8,0,0,0,16,0V192a24,24,0,0,1,48,0v40a8,8,0,0,0,16,0V192a39.8,39.8,0,0,0-8.44-24.53A56.06,56.06,0,0,0,216,112v-8A58.14,58.14,0,0,0,208.31,75.68ZM200,112a40,40,0,0,1-40,40H112a40,40,0,0,1-40-40v-8a41.74,41.74,0,0,1,6.9-22.48A8,8,0,0,0,80,73.83a43.81,43.81,0,0,1,.79-33.58,43.88,43.88,0,0,1,32.32,20.06A8,8,0,0,0,119.82,64h32.35a8,8,0,0,0,6.74-3.69,43.87,43.87,0,0,1,32.32-20.06A43.81,43.81,0,0,1,192,73.83a8.09,8.09,0,0,0,1,7.65A41.72,41.72,0,0,1,200,104Z"/></symbol>
+<symbol id="ph-reset" viewBox="0 0 256 256"><path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z"/></symbol>
+<symbol id="ph-bulb" viewBox="0 0 256 256"><path d="M176,232a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,232Zm40-128a87.55,87.55,0,0,1-33.64,69.21A16.24,16.24,0,0,0,176,186v6a16,16,0,0,1-16,16H96a16,16,0,0,1-16-16v-6a16,16,0,0,0-6.23-12.66A87.59,87.59,0,0,1,40,104.49C39.74,56.83,78.26,17.14,125.88,16A88,88,0,0,1,216,104Zm-16,0a72,72,0,0,0-73.74-72c-39,.92-70.47,33.39-70.26,72.39a71.65,71.65,0,0,0,27.64,56.3A32,32,0,0,1,96,186v6h64v-6a32.15,32.15,0,0,1,12.47-25.35A71.65,71.65,0,0,0,200,104Zm-16.11-9.34a57.6,57.6,0,0,0-46.56-46.55,8,8,0,0,0-2.66,15.78c16.57,2.79,30.63,16.85,33.44,33.45A8,8,0,0,0,176,104a9,9,0,0,0,1.35-.11A8,8,0,0,0,183.89,94.66Z"/></symbol>
+<symbol id="ph-caret-up" viewBox="0 0 256 256"><path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/></symbol>
+<symbol id="ph-gauge" viewBox="0 0 256 256"><path d="M232,136.66A104.12,104.12,0,1,1,119.34,24,8,8,0,0,1,120.66,40,88.12,88.12,0,1,0,216,135.34,8,8,0,0,1,232,136.66ZM120,72v56a8,8,0,0,0,8,8h56a8,8,0,0,0,0-16H136V72a8,8,0,0,0-16,0Zm40-24a12,12,0,1,0-12-12A12,12,0,0,0,160,48Zm36,24a12,12,0,1,0-12-12A12,12,0,0,0,196,72Zm24,36a12,12,0,1,0-12-12A12,12,0,0,0,220,108Z"/></symbol>
+</defs></svg>
+
+<div class="topbar reveal" data-rv="top">
+  <div class="brandmark">
+   <a href="https://github.com/1234620/parsimony" target="_blank" rel="noopener">
+    <span class="glyph" aria-hidden="true"><svg><use href="#ph-scales"/></svg></span>
+    <span>
+      <span class="name">Parsimony</span><br>
+      <span class="sub">GIBC V2 &middot; Track 01 &middot; foundational LLM</span>
+    </span>
+   </a>
+  </div>
+  <div class="topactions">
+    <a class="btn" id="btnCsv" href="#">
+      <svg aria-hidden="true"><use href="#ph-download"/></svg>
+      Export CSV
+    </a>
+    <a class="btn btn-primary" href="https://github.com/1234620/parsimony" target="_blank" rel="noopener">
+      <svg aria-hidden="true"><use href="#ph-github"/></svg>
+      Repository
+    </a>
+  </div>
+</div>
+
+<header class="hero reveal" data-rv="hero">
+  <span class="eyebrow">
+    <svg class="eb-ico" aria-hidden="true"><use href="#ph-gauge"/></svg>
+    50M parameter cap &middot; embeddings included
+  </span>
+  <h1>Half your model is a dictionary. A third is the right answer.</h1>
   <p class="thesis">
     The 50M parameter cap counts token embeddings. That turns vocabulary size from a
     preprocessing detail into a <strong>capacity allocation decision</strong>: with GPT&#8209;2&rsquo;s
@@ -157,7 +328,7 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
     for just 7 transformer layers. An 8k vocabulary buys 14 layers for the same parameters.
     So we measured which is actually better &mdash; and the answer splits in two.
   </p>
-  <p class="thesis" style="margin-top:14px">
+  <p class="thesis">
     <strong>Compression and reasoning don't trade off &mdash; at this scale, on real text, they
     agree.</strong> In our sweep the best model spends <strong>over a third of the budget on
     embeddings</strong> and has both the lowest bits&#8209;per&#8209;byte and the top reasoning
@@ -166,138 +337,298 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
   </p>
 </header>
 
-<div class="rule"></div>
-
-<div class="instrument">
-  <div class="inst-head">
-    <span class="inst-title">Parameter budget allocator</span>
-    <span class="inst-sub" id="cfgline">d_model 512 &middot; SwiGLU &middot; tied embeddings</span>
-  </div>
-  <div class="inst-body">
-    <div class="sliderow">
-      <label class="slab" for="vocab">Vocabulary</label>
-      <input type="range" id="vocab" min="0" max="100" value="30" step="1" aria-describedby="vocabval">
-      <span class="vocabval mono" id="vocabval">8,192</span>
-      <button class="preset" data-v="8192">custom BPE 8k</button>
-      <button class="preset" data-v="32000">Llama 32k</button>
-      <button class="preset" data-v="50257">GPT-2 50k</button>
+<div class="card reveal" data-rv="ctrl">
+  <div class="panel-head">
+    <span class="panel-label">Budget allocator</span>
+    <div class="pnl-tools">
+      <span class="mono" id="cfgline" style="font-size:12px;color:var(--muted)">d_model 512 &middot; SwiGLU &middot; tied embeddings</span>
+      <button class="btn" id="btnReset" type="button">
+        <svg aria-hidden="true"><use href="#ph-reset"/></svg>
+        Reset
+      </button>
     </div>
+  </div>
+  <div class="ctrl-grid">
+    <div class="field">
+      <label class="flabel" for="vocab">Vocabulary size <span class="val mono" id="vocabval">16,384</span></label>
+      <input type="range" id="vocab" min="0" max="100" value="76" step="1"
+             aria-describedby="vocabval" aria-label="Vocabulary size, logarithmic from 512 to 65,536 tokens">
+      <div class="ticks mono"><span>512</span><span>4k</span><span>16k</span><span>65k</span></div>
+    </div>
+    <div class="field">
+      <div class="flabel">Tokenizer presets</div>
+      <div class="chips" id="presets">
+        <button class="chip" type="button" data-v="8192" aria-pressed="false">Custom BPE 8k</button>
+        <button class="chip" type="button" data-v="16384" aria-pressed="true">Parsimony 16k</button>
+        <button class="chip" type="button" data-v="32000" aria-pressed="false">Llama 32k</button>
+        <button class="chip" type="button" data-v="50257" aria-pressed="false">GPT-2 50k</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="flabel">Model width</div>
+      <div class="chips" id="dmodels">
+        <button class="chip" type="button" data-d="384" aria-pressed="false">384</button>
+        <button class="chip" type="button" data-d="512" aria-pressed="true">512</button>
+        <button class="chip" type="button" data-d="640" aria-pressed="false">640</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <div class="bar" role="img" aria-label="Parameter budget split between embedding table and transformer layers">
+<div class="insights reveal" data-rv="ins">
+  <button class="ins-head" type="button" id="insToggle" aria-expanded="true" aria-controls="insBody">
+    <svg class="bulb" aria-hidden="true"><use href="#ph-bulb"/></svg>
+    <span class="ins-title">Insights</span>
+    <svg class="chev" aria-hidden="true"><use href="#ph-caret-up"/></svg>
+  </button>
+  <div class="ins-body" id="insBody">
+    <ul>
+      <li id="insLive">&mdash;</li>
+      <li>Best measured configuration: <b>16,384 tokens</b> &mdash; lowest bits/byte <b>and</b> top reasoning score of the four tested.</li>
+      <li>GPT-2's 50,257-token vocabulary did not finish training inside the sweep's compute budget.</li>
+    </ul>
+  </div>
+</div>
+
+<dl class="kpis reveal" data-rv="kpi">
+  <div class="kpi"><dt>Total parameters</dt><dd id="rTotal">&mdash;</dd><div class="spark"><i id="sparkTotal" style="width:0%"></i></div></div>
+  <div class="kpi"><dt>Transformer layers</dt><dd id="rLayers">&mdash;</dd><div class="spark"><i id="sparkLayers" style="width:0%"></i></div></div>
+  <div class="kpi"><dt>Embedding share</dt><dd id="rFrac">&mdash;</dd><div class="spark"><i id="sparkFrac" style="width:0%"></i></div></div>
+  <div class="kpi"><dt>Params / layer</dt><dd id="rPerLayer">&mdash;</dd><div class="spark"><i style="width:100%;background:var(--line)"></i></div></div>
+  <div class="kpi"><dt>Headroom to 50M</dt><dd id="rHead">&mdash;</dd><div class="spark"><i id="sparkHead" style="width:0%"></i></div></div>
+</dl>
+
+<div class="tabbar reveal" data-rv="tabs" role="tablist" aria-label="Report sections">
+  <button class="tab" role="tab" id="tab-alloc"  aria-controls="pnl-alloc"  aria-selected="true">Allocation</button>
+  <button class="tab" role="tab" id="tab-sweep"  aria-controls="pnl-sweep"  aria-selected="false" tabindex="-1">Sweep Results</button>
+  <button class="tab" role="tab" id="tab-trade"  aria-controls="pnl-trade"  aria-selected="false" tabindex="-1">The Tradeoff</button>
+  <button class="tab" role="tab" id="tab-flag"   aria-controls="pnl-flag"   aria-selected="false" tabindex="-1">Flagship</button>
+  <button class="tab" role="tab" id="tab-method" aria-controls="pnl-method" aria-selected="false" tabindex="-1">Method Notes</button>
+  <button class="tab" role="tab" id="tab-arch"   aria-controls="pnl-arch"   aria-selected="false" tabindex="-1">Architecture</button>
+</div>
+
+<!-- ALLOCATION -->
+<section class="panel card" id="pnl-alloc" role="tabpanel" aria-labelledby="tab-alloc" tabindex="0">
+  <div class="pnl-head">
+    <div>
+      <h2>Where the budget goes</h2>
+      <p>Live split between the embedding lookup table and the transformer layers it leaves room for.</p>
+    </div>
+    <div class="pnl-tools">
+      <div class="seg-ctl" id="stackMode">
+        <button type="button" data-mode="fit" aria-pressed="true">Layers that fit</button>
+        <button type="button" data-mode="all" aria-pressed="false">Against maximum</button>
+      </div>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <div class="alloc-bar" role="img" aria-label="Parameter budget split between embedding table and transformer layers" id="allocBar">
       <div class="seg seg-embed" id="segEmbed"></div>
       <div class="seg seg-compute" id="segCompute"></div>
     </div>
     <div class="barkey">
-      <span class="key"><span class="swatch" style="background:var(--embed)"></span>embedding table &mdash; a lookup, no computation</span>
-      <span class="key"><span class="swatch" style="background:var(--compute)"></span>transformer layers &mdash; where reasoning happens</span>
+      <span class="key"><span class="swatch" style="background:var(--s1)"></span>Embedding table &mdash; a lookup, no computation</span>
+      <span class="key"><span class="swatch" style="background:var(--s2)"></span>Transformer layers &mdash; where reasoning happens</span>
     </div>
-
     <div class="stackwrap">
       <div class="stacklab" id="stacklab">Transformer layers that fit</div>
       <div class="stack" id="stack"></div>
     </div>
-
-    <dl class="readout">
-      <div class="cell"><dt>Total parameters</dt><dd id="rTotal">&mdash;</dd></div>
-      <div class="cell"><dt>Layers</dt><dd id="rLayers">&mdash;</dd></div>
-      <div class="cell"><dt>Embedding share</dt><dd id="rFrac">&mdash;</dd></div>
-      <div class="cell"><dt>Params / layer</dt><dd id="rPerLayer">&mdash;</dd></div>
-      <div class="cell"><dt>Headroom to 50M</dt><dd id="rHead">&mdash;</dd></div>
-    </dl>
+    <div class="chartbox" id="chartDepth" style="min-height:300px;margin-top:26px"></div>
+    <p class="note brand">
+      <b>The slider is the whole argument.</b> Every token you add to the vocabulary is paid for
+      in transformer layers, one-for-one out of the same 50M. Drag it to GPT-2's 50,257 and watch
+      the depth collapse; drag it to 2,048 and the model is deep but reads text through a
+      coarse, wasteful tokenizer. The measured question is where in between to stop.
+    </p>
   </div>
-</div>
-
-<section>
-  <h2>The measured tradeoff</h2>
-  <p class="sectnote">
-    Shrinking the vocabulary is not free: fewer, coarser tokens mean more tokens per byte of
-    text, which costs compute and shortens effective context. So the study fixes <em>both</em>
-    the parameter budget and the FLOP budget, and asks which allocation wins. At this scale, on
-    real text, compression and reasoning move <em>together</em> &mdash; both are best at the same
-    vocabulary.
-  </p>
-  <div class="tablewrap">
-    <table id="resultsTable">
-      <thead><tr>
-        <th>Vocab</th><th>Layers</th><th>Embed %</th><th>Bytes/token</th>
-        <th>Steps</th><th>Bits/byte</th><th>Token PPL</th>
-        <th>Reason (gen)</th><th>Reason (choice)</th>
-      </tr></thead>
-      <tbody id="resultsBody"></tbody>
-    </table>
-  </div>
-  <div class="chartbox">
-    <svg id="chart" viewBox="0 0 720 280" width="100%" height="280" role="img"
-         aria-label="Bits per byte and reasoning accuracy against vocabulary size, diverging"></svg>
-  </div>
-  <p class="note">
-    <b>The two curves agree, and the optimum is interior.</b> Both bits&#8209;per&#8209;byte and reasoning
-    accuracy are best at the <b>16,384-token</b> vocabulary (1.1332 bits/byte, 96.7% reasoning) &mdash;
-    not the smallest vocabulary tested (2,048: worst on both) and not the largest completed
-    (32,768: gives a little back on both). A smaller, synthetic&#8209;data pilot first suggested the
-    two capabilities trade off against each other; at this scale, on real text, they don't &mdash;
-    more vocabulary helps both, up to a point. GPT-2's own 50,257-token vocabulary didn't finish
-    training inside the sweep's compute budget, so where that point sits beyond 32,768 is unmeasured.
-  </p>
-  <p class="note">
-    <b>Why bits&#8209;per&#8209;byte, not perplexity.</b> Per&#8209;token perplexity is not comparable across
-    tokenizers: a larger vocabulary makes each token carry more text, so it predicts fewer and
-    harder tokens and its perplexity looks better without the model modelling the underlying text
-    any better. Normalising by the raw bytes of held&#8209;out text removes the tokenizer from the
-    metric entirely. Every comparison here is in bits&#8209;per&#8209;byte; token perplexity is shown only
-    to demonstrate how badly it misleads.
-  </p>
-  <p class="note">
-    <b>The reasoning metric above is free generation, and that's a confound worth naming.</b>
-    Free generation rewards large vocabularies for a reason that has nothing to do with
-    reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip. A
-    smaller pilot (below) found that rescoring every candidate by byte&#8209;normalised likelihood
-    &mdash; how ARC and HellaSwag are scored &mdash; shrinks that apparent effect by
-    <b>1.6&times;</b>. We didn't re-run that rescoring at this scale, so part of 16,384's edge over
-    2,048 here may be this same artifact rather than pure capability.
-  </p>
-  <p class="note" style="border-left-color:var(--embed)">
-    <b>Scale note.</b> The table above is the GPU sweep: a 12M-parameter budget on real text
-    (TinyStories, FineWeb-Edu, reasoning traces), FLOP-matched at 6.0&times;10<sup>15</sup> per
-    configuration, 120 held-out reasoning items (&plusmn;3&#8211;5 points). The smaller CPU pilot
-    below runs on a synthetic corpus, purely to validate the pipeline before spending GPU budget,
-    and with 80 held&#8209;out items its reasoning confidence intervals are roughly &plusmn;11
-    points &mdash; suggestive, not settled, and its own finding didn't replicate above. The full
-    50M-parameter flagship model, trained on the GPU sweep's winning vocabulary, reaches
-    <b>0.9416 bits/byte</b> and <b>99% reasoning accuracy</b> &mdash; see the README for sample
-    generations.
-  </p>
 </section>
 
-<section>
-  <h2>Architecture</h2>
-  <p class="sectnote">
-    Deliberately conventional&#8209;modern, so the variable under study is the budget allocation
-    rather than a pile of confounding novelties.
-  </p>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Component</th><th>Choice</th><th>Reason</th></tr></thead>
-      <tbody>
-        <tr><td>Normalisation</td><td>RMSNorm, pre&#8209;norm</td><td>Fewer parameters and ops than LayerNorm</td></tr>
-        <tr><td>Positions</td><td>RoPE</td><td>No learned position table to spend budget on</td></tr>
-        <tr><td>Feed&#8209;forward</td><td>SwiGLU, d_ff = 8/3 &middot; d</td><td>Matches 4d parameter cost at better quality</td></tr>
-        <tr><td>Attention</td><td>GQA + QK&#8209;norm</td><td>Smaller KV cache; stable at high learning rate</td></tr>
-        <tr><td>Embeddings</td><td>Tied input/output</td><td>Halves the single largest parameter block</td></tr>
-      </tbody>
-    </table>
+<!-- SWEEP RESULTS -->
+<section class="panel card" id="pnl-sweep" role="tabpanel" aria-labelledby="tab-sweep" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>The measured tradeoff</h2>
+      <p>Bits&#8209;per&#8209;byte and reasoning accuracy against vocabulary size, FLOP&#8209;matched at 6.0&times;10<sup>15</sup> per configuration.</p>
+    </div>
+    <div class="pnl-tools">
+      <div class="seg-ctl" id="sweepMode">
+        <button type="button" data-view="both" aria-pressed="true">Both metrics</button>
+        <button type="button" data-view="bpb" aria-pressed="false">Bits/byte</button>
+        <button type="button" data-view="acc" aria-pressed="false">Reasoning</button>
+      </div>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <p class="lede">
+      Shrinking the vocabulary is not free: fewer, coarser tokens mean more tokens per byte of
+      text, which costs compute and shortens effective context. So the study fixes <em>both</em>
+      the parameter budget and the FLOP budget, and asks which allocation wins. At this scale, on
+      real text, compression and reasoning move <em>together</em> &mdash; both are best at the same
+      vocabulary.
+    </p>
+    <div class="chartbox" id="chartSweep"></div>
+    <div class="tablewrap" style="margin-top:20px">
+      <table id="resultsTable">
+        <caption class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">GPU sweep results by vocabulary size</caption>
+        <thead><tr>
+          <th scope="col">Vocab</th><th scope="col">Layers</th><th scope="col">Embed %</th><th scope="col">Bytes/token</th>
+          <th scope="col">Steps</th><th scope="col">Bits/byte</th><th scope="col">Token PPL</th>
+          <th scope="col">Reason (gen)</th><th scope="col">Reason (choice)</th>
+        </tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+    <p class="note good">
+      <b>The two curves agree, and the optimum is interior.</b> Both bits&#8209;per&#8209;byte and reasoning
+      accuracy are best at the <b>16,384-token</b> vocabulary (1.1332 bits/byte, 96.7% reasoning) &mdash;
+      not the smallest vocabulary tested (2,048: worst on both) and not the largest completed
+      (32,768: gives a little back on both). A smaller, synthetic&#8209;data pilot first suggested the
+      two capabilities trade off against each other; at this scale, on real text, they don't &mdash;
+      more vocabulary helps both, up to a point. GPT-2's own 50,257-token vocabulary didn't finish
+      training inside the sweep's compute budget, so where that point sits beyond 32,768 is unmeasured.
+    </p>
+  </div>
+</section>
+
+<!-- TRADEOFF -->
+<section class="panel card" id="pnl-trade" role="tabpanel" aria-labelledby="tab-trade" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>Depth bought, compression sold</h2>
+      <p>What each vocabulary actually costs: transformer layers against how much text a single token carries.</p>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <p class="lede">
+      These are the two quantities the slider trades against each other. A small vocabulary keeps
+      the layer count high but drops to <b>2.99 bytes per token</b>, so the same FLOP budget covers
+      less text. A large vocabulary packs <b>4.42 bytes into every token</b> but leaves only four
+      layers to think with.
+    </p>
+    <div class="chartbox" id="chartTrade"></div>
+    <p class="note warm">
+      <b>Steps tell the same story from the other side.</b> The 32,768 configuration ran
+      <b>14,318 steps</b> to the 2,048 configuration's 4,091 &mdash; not because it trained longer,
+      but because four layers are cheap per step, so a fixed FLOP budget buys many more of them.
+      FLOP&#8209;matching, not step&#8209;matching, is what makes these rows comparable.
+    </p>
+  </div>
+</section>
+
+<!-- FLAGSHIP -->
+<section class="panel card" id="pnl-flag" role="tabpanel" aria-labelledby="tab-flag" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>Flagship model</h2>
+      <p>The full 50M-parameter budget, trained on the vocabulary the sweep selected.</p>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <dl class="flagrid">
+      <div class="flagcell"><dt>Parameters</dt><dd>48.87M</dd></div>
+      <div class="flagcell"><dt>Vocabulary</dt><dd>16,384</dd></div>
+      <div class="flagcell"><dt>Layers</dt><dd>13</dd></div>
+      <div class="flagcell"><dt>Bits / byte</dt><dd style="color:var(--good)">0.9416</dd></div>
+      <div class="flagcell"><dt>Reasoning</dt><dd style="color:var(--good)">99.0%</dd></div>
+      <div class="flagcell"><dt>Train tokens</dt><dd>294.9M</dd></div>
+    </dl>
+    <div class="chartbox" id="chartFlag" style="min-height:280px"></div>
+    <p class="note good">
+      <b>The sweep's choice held at four times the scale.</b> The 12M-parameter sweep picked a
+      16,384-token vocabulary; trained at the full 50M budget on the same tokenizer, the model
+      reaches <b>0.9416 bits/byte</b> and <b>99% reasoning accuracy</b> &mdash; a 17% reduction in
+      bits/byte over the best sweep configuration. Trained from scratch on a Tesla T4 in 2h 22m,
+      no pretrained initialisation. See the README for sample generations.
+    </p>
+  </div>
+</section>
+
+<!-- METHOD NOTES -->
+<section class="panel card" id="pnl-method" role="tabpanel" aria-labelledby="tab-method" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>Method notes</h2>
+      <p>What the numbers do and don't support, including the confounds we can name.</p>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <p class="note">
+      <b>Why bits&#8209;per&#8209;byte, not perplexity.</b> Per&#8209;token perplexity is not comparable across
+      tokenizers: a larger vocabulary makes each token carry more text, so it predicts fewer and
+      harder tokens and its perplexity looks better without the model modelling the underlying text
+      any better. Normalising by the raw bytes of held&#8209;out text removes the tokenizer from the
+      metric entirely. Every comparison here is in bits&#8209;per&#8209;byte; token perplexity is shown only
+      to demonstrate how badly it misleads.
+    </p>
+    <p class="note warm">
+      <b>The reasoning metric above is free generation, and that's a confound worth naming.</b>
+      Free generation rewards large vocabularies for a reason that has nothing to do with
+      reasoning: the gold answer is fewer tokens, so greedy decoding has fewer chances to slip. A
+      smaller pilot found that rescoring every candidate by byte&#8209;normalised likelihood
+      &mdash; how ARC and HellaSwag are scored &mdash; shrinks that apparent effect by
+      <b>1.6&times;</b>. We didn't re-run that rescoring at this scale, so part of 16,384's edge over
+      2,048 here may be this same artifact rather than pure capability.
+    </p>
+    <p class="note brand">
+      <b>Scale note.</b> The sweep table is the GPU run: a 12M-parameter budget on real text
+      (TinyStories, FineWeb-Edu, reasoning traces), FLOP-matched at 6.0&times;10<sup>15</sup> per
+      configuration, 120 held-out reasoning items (&plusmn;3&#8211;5 points). The smaller CPU pilot
+      runs on a synthetic corpus, purely to validate the pipeline before spending GPU budget,
+      and with 80 held&#8209;out items its reasoning confidence intervals are roughly &plusmn;11
+      points &mdash; suggestive, not settled, and its own finding didn't replicate on the GPU run.
+    </p>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="panel card" id="pnl-arch" role="tabpanel" aria-labelledby="tab-arch" tabindex="0" hidden>
+  <div class="pnl-head">
+    <div>
+      <h2>Architecture</h2>
+      <p>Deliberately conventional&#8209;modern, so the variable under study is the budget allocation rather than a pile of confounding novelties.</p>
+    </div>
+  </div>
+  <div class="pnl-body">
+    <div class="tablewrap">
+      <table class="arch-table">
+        <thead><tr><th scope="col">Component</th><th scope="col">Choice</th><th scope="col">Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Normalisation</td><td>RMSNorm, pre&#8209;norm</td><td>Fewer parameters and ops than LayerNorm</td></tr>
+          <tr><td>Positions</td><td>RoPE</td><td>No learned position table to spend budget on</td></tr>
+          <tr><td>Feed&#8209;forward</td><td>SwiGLU, d_ff = 8/3 &middot; d</td><td>Matches 4d parameter cost at better quality</td></tr>
+          <tr><td>Attention</td><td>GQA + QK&#8209;norm</td><td>Smaller KV cache; stable at high learning rate</td></tr>
+          <tr><td>Embeddings</td><td>Tied input/output</td><td>Halves the single largest parameter block</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      <b>Nothing here is the contribution.</b> Every one of these choices is standard practice for
+      a small decoder-only transformer in 2024&#8211;25. They are listed so the reader can confirm
+      that the difference between rows in the sweep is vocabulary allocation and nothing else.
+    </p>
   </div>
 </section>
 
 <footer>
-  Parsimony &middot; trained from scratch, no pretrained initialisation &middot;
-  parameter counts verified by <code>scripts/verify_params.py</code>
+  <span>Parsimony &middot; trained from scratch, no pretrained initialisation</span>
+  <span>&middot;</span>
+  <span>parameter counts verified by <code>scripts/verify_params.py</code></span>
 </footer>
 </div>
 
 <script>
-const BUDGET = 50000000, D = 512;
+const BUDGET = 50000000;
 const RESULTS = [{"vocab_actual": 2048, "n_layers": 14, "embed_fraction": 0.04453335652778986, "bytes_per_token": 2.9900604591194644, "steps": 4091, "bits_per_byte": 1.2229737058628303, "token_ppl": 12.634337810027729, "reasoning_acc": 0.9333333333333333, "reasoning_choice_acc": null}, {"vocab_actual": 8192, "n_layers": 12, "embed_fraction": 0.17865009268345872, "bytes_per_token": 3.854276747050177, "steps": 4773, "bits_per_byte": 1.156806938887009, "token_ppl": 22.03489240710592, "reasoning_acc": 0.9583333333333334, "reasoning_choice_acc": null}, {"vocab_actual": 16384, "n_layers": 9, "embed_fraction": 0.36709498896519277, "bytes_per_token": 4.190152605816297, "steps": 6364, "bits_per_byte": 1.1331945125983391, "token_ppl": 26.937065889174203, "reasoning_acc": 0.9666666666666667, "reasoning_choice_acc": null}, {"vocab_actual": 32768, "n_layers": 4, "embed_fraction": 0.7229883282218741, "bytes_per_token": 4.423860587774831, "steps": 14318, "bits_per_byte": 1.1354583564058252, "token_ppl": 32.59460329845826, "reasoning_acc": 0.95, "reasoning_choice_acc": null}];
+const FLAGSHIP = {vocab:16384, params:48872576, n_layers:13, bits_per_byte:0.9416013547353811, reasoning_acc:0.99};
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-US');
+const m2 = n => (n/1e6).toFixed(2) + 'M';
+
+/* ======================= allocator model ======================= */
+let D = 512;
 
 function solveShape(vocab, budget, d){
   const dFF = Math.max(64, Math.round(d * (8/3) / 64) * 64);
@@ -307,57 +638,119 @@ function solveShape(vocab, budget, d){
   const total = emb + layers*perLayer + d;
   return {vocab, d, dFF, emb, perLayer, layers, total, frac: total ? emb/total : 1};
 }
-const fmt = n => n.toLocaleString('en-US');
-const m2 = n => (n/1e6).toFixed(2) + 'M';
 
 // log-scale slider 512 -> 65536
 const VMIN = Math.log(512), VMAX = Math.log(65536);
 const posToVocab = p => Math.round(Math.exp(VMIN + (VMAX-VMIN)*p/100) / 256) * 256;
 const vocabToPos = v => Math.round((Math.log(v)-VMIN)/(VMAX-VMIN)*100);
 
-const $ = id => document.getElementById(id);
-let lastLayers = -1;
+let lastLayers = -1, lastD = -1, stackMode = 'fit';
+const DEFAULT_VOCAB = 16384;
+let currentVocab = DEFAULT_VOCAB;
 
-function render(vocab){
+function insightFor(s){
+  const pct = (s.frac*100).toFixed(1);
+  if (s.layers === 0) return `At <b>${fmt(s.vocab)} tokens</b> the embedding table alone exceeds the 50M budget &mdash; <b>no transformer layers fit at all</b>.`;
+  if (s.vocab >= 40000) return `At <b>${fmt(s.vocab)} tokens</b>, <b>${pct}%</b> of the budget is a lookup table and only <b>${s.layers} layers</b> remain. This is roughly GPT-2's vocabulary &mdash; it never finished training in our sweep.`;
+  if (s.vocab <= 4096) return `At <b>${fmt(s.vocab)} tokens</b> you get <b>${s.layers} layers</b> for just <b>${pct}%</b> embedding spend &mdash; but tokens carry ~3 bytes each, so the FLOP budget covers far less text.`;
+  return `At <b>${fmt(s.vocab)} tokens</b>, <b>${pct}%</b> of the budget is the embedding table, leaving <b>${s.layers} transformer layers</b>. Our best measured configuration sits in this range.`;
+}
+
+function render(vocab, animate){
   const s = solveShape(vocab, BUDGET, D);
   const embPct = s.total ? (s.emb/s.total*100) : 100;
+  const headroom = BUDGET - s.total;
 
   $('vocabval').textContent = fmt(vocab);
   $('segEmbed').style.width = embPct + '%';
   $('segCompute').style.width = (100-embPct) + '%';
-  $('segEmbed').textContent = embPct > 14 ? m2(s.emb) + '  ' + embPct.toFixed(0) + '%' : '';
-  $('segCompute').textContent = (100-embPct) > 14 ? m2(s.total-s.emb) + '  ' + (100-embPct).toFixed(0) + '%' : '';
+  $('segEmbed').textContent = embPct > 16 ? m2(s.emb) + ' · ' + embPct.toFixed(0) + '%' : '';
+  $('segCompute').textContent = (100-embPct) > 16 ? m2(s.total-s.emb) + ' · ' + (100-embPct).toFixed(0) + '%' : '';
 
   $('rTotal').innerHTML = m2(s.total) + ' <small>/ 50M</small>';
   $('rLayers').textContent = s.layers;
   $('rFrac').textContent = embPct.toFixed(1) + '%';
   $('rPerLayer').textContent = m2(s.perLayer);
-  $('rHead').textContent = m2(BUDGET - s.total);
-  $('cfgline').textContent = `d_model ${D} · d_ff ${s.dFF} · tied embeddings`;
-  $('stacklab').textContent = `Transformer layers that fit — ${s.layers} × ${m2(s.perLayer)}`;
+  $('rHead').textContent = m2(headroom);
 
-  if (s.layers !== lastLayers){
+  $('sparkTotal').style.width = Math.min(100, s.total/BUDGET*100) + '%';
+  $('sparkLayers').style.width = Math.min(100, s.layers/20*100) + '%';
+  $('sparkFrac').style.width = embPct + '%';
+  $('sparkHead').style.width = Math.min(100, headroom/BUDGET*100*8) + '%';
+
+  $('cfgline').textContent = `d_model ${s.d} · d_ff ${s.dFF} · tied embeddings`;
+  $('stacklab').textContent = `Transformer layers that fit — ${s.layers} × ${m2(s.perLayer)} parameters`;
+  $('insLive').innerHTML = insightFor(s);
+
+  if (s.layers !== lastLayers || s.d !== lastD || animate === 'force'){
     const st = $('stack');
     st.innerHTML = '';
-    const maxRef = solveShape(512, BUDGET, D).layers;
-    for (let i=0;i<maxRef;i++){
+    const maxRef = stackMode === 'all' ? solveShape(512, BUDGET, s.d).layers : s.layers;
+    const n = Math.max(maxRef, s.layers);
+    for (let i=0;i<n;i++){
       const el = document.createElement('div');
       el.className = 'layer' + (i < s.layers ? '' : ' ghost');
-      el.style.animationDelay = (i*11) + 'ms';
+      el.style.animationDelay = (i*12) + 'ms';
       st.appendChild(el);
     }
-    lastLayers = s.layers;
+    lastLayers = s.layers; lastD = s.d;
   }
+  moveDepthMarker(vocab);
 }
 
-$('vocab').addEventListener('input', e => render(posToVocab(+e.target.value)));
-document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => {
-  const v = +b.dataset.v;
+/* ---- controls ---- */
+$('vocab').addEventListener('input', e => {
+  const v = currentVocab = posToVocab(+e.target.value);
+  render(v);
+  document.querySelectorAll('#presets .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === v)));
+});
+
+document.querySelectorAll('#presets .chip').forEach(b => b.addEventListener('click', () => {
+  const v = currentVocab = +b.dataset.v;
   $('vocab').value = vocabToPos(v);
+  document.querySelectorAll('#presets .chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
   render(v);
 }));
 
-/* ---- results table + chart ---- */
+document.querySelectorAll('#dmodels .chip').forEach(b => b.addEventListener('click', () => {
+  D = +b.dataset.d;
+  document.querySelectorAll('#dmodels .chip').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+  if (charts.depth) charts.depth.updateSeries([{name:'Layers that fit', data: depthSeries(D)}]);
+  render(currentVocab, 'force');
+}));
+
+document.querySelectorAll('#stackMode button').forEach(b => b.addEventListener('click', () => {
+  stackMode = b.dataset.mode;
+  document.querySelectorAll('#stackMode button').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+  render(currentVocab, 'force');
+}));
+
+$('btnReset').addEventListener('click', () => {
+  D = 512; stackMode = 'fit'; currentVocab = DEFAULT_VOCAB;
+  $('vocab').value = vocabToPos(DEFAULT_VOCAB);
+  if (charts.depth) charts.depth.updateSeries([{name:'Layers that fit', data: depthSeries(D)}]);
+  document.querySelectorAll('#presets .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v === 16384)));
+  document.querySelectorAll('#dmodels .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.d === 512)));
+  document.querySelectorAll('#stackMode button').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.mode === 'fit')));
+  render(DEFAULT_VOCAB, 'force');
+});
+
+/* ======================= insights collapse ======================= */
+(function(){
+  const btn = $('insToggle'), body = $('insBody');
+  btn.addEventListener('click', () => {
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!open));
+    if (REDUCED || typeof gsap === 'undefined'){
+      body.style.display = open ? 'none' : '';
+      return;
+    }
+    if (open) gsap.to(body, {height:0, opacity:0, duration:.28, ease:'power2.inOut'});
+    else gsap.to(body, {height:'auto', opacity:1, duration:.32, ease:'power2.out'});
+  });
+})();
+
+/* ======================= results table ======================= */
 function paintResults(){
   const body = $('resultsBody');
   if (!RESULTS.length){
@@ -377,59 +770,341 @@ function paintResults(){
     <td class="${r.reasoning_acc===bestAcc?'best':''}">${(r.reasoning_acc*100).toFixed(1)}%</td>
     <td>${r.reasoning_choice_acc==null?'&mdash;':(r.reasoning_choice_acc*100).toFixed(1)+'%'}</td>
   </tr>`).join('');
-  drawChart();
 }
 
-function drawChart(){
-  const svg = $('chart');
-  if (!RESULTS.length) return;
-  const W=720,H=280, L=66,R=66,T=24,B=52;
-  const xs = RESULTS.map(r => Math.log(r.vocab_actual));
-  const x0=Math.min(...xs), x1=Math.max(...xs);
-  const px = v => L + (x1===x0?0.5:(v-x0)/(x1-x0))*(W-L-R);
+/* ======================= ApexCharts ======================= */
+const FONT = '"Plus Jakarta Sans", system-ui, sans-serif';
+const MONO = '"JetBrains Mono", ui-monospace, monospace';
+const charts = {};
 
-  const bs = RESULTS.map(r => r.bits_per_byte);
-  let b0=Math.min(...bs), b1=Math.max(...bs);
-  const bpad=(b1-b0)*0.28 || 0.05; b0-=bpad; b1+=bpad;
-  const pyB = v => T + (1-(v-b0)/(b1-b0))*(H-T-B);
+const baseOpts = {
+  chart: {
+    fontFamily: FONT, toolbar:{show:false}, zoom:{enabled:false},
+    animations:{ enabled: !REDUCED, easing:'easeinout', speed:700,
+      animateGradually:{enabled:true, delay:120}, dynamicAnimation:{enabled:true, speed:400} },
+    foreColor:'#6C6C78'
+  },
+  grid:{ borderColor:'#EDEDF1', strokeDashArray:4, padding:{left:8,right:8,top:0,bottom:0} },
+  dataLabels:{enabled:false},
+  legend:{
+    position:'bottom', horizontalAlign:'center', fontSize:'13px', fontWeight:600,
+    markers:{width:9, height:9, radius:9}, itemMargin:{horizontal:14, vertical:6}, offsetY:4
+  },
+  tooltip:{ shared:true, intersect:false, style:{fontSize:'12.5px', fontFamily:FONT} }
+};
 
-  const accKey = r => (r.reasoning_choice_acc!=null ? r.reasoning_choice_acc : r.reasoning_acc);
-  const pyA = v => T + (1-v)*(H-T-B);   // accuracy always 0..1
+/* depth-vs-vocabulary curve, live-linked to the slider */
+const DEPTH_STOPS = [];
+for (let p = 0; p <= 100; p += 2) DEPTH_STOPS.push(posToVocab(p));
 
-  let g = '';
-  for (let i=0;i<=3;i++){
-    const v=b0+(b1-b0)*i/3, y=pyB(v);
-    g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="#2A3142" stroke-width="1"/>`;
-    g += `<text x="${L-9}" y="${(y+4).toFixed(1)}" fill="#4FB3A5" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="end">${v.toFixed(3)}</text>`;
-  }
-  [0,0.25,0.5,0.75,1].forEach(v=>{
-    g += `<text x="${W-R+9}" y="${(pyA(v)+4).toFixed(1)}" fill="#E8A33D" font-size="11" font-family="IBM Plex Mono,monospace">${(v*100).toFixed(0)}%</text>`;
+// ApexCharts has no logarithmic x-axis, so plot log2(vocab) and format the
+// ticks back into token counts.
+const lg = v => Math.log(v) / Math.LN2;
+
+function depthSeries(d){
+  return DEPTH_STOPS.map(v => ({x: +lg(v).toFixed(4), y: solveShape(v, BUDGET, d).layers}));
+}
+
+function buildDepthChart(){
+  if (typeof ApexCharts === 'undefined') return;
+  const opts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'area', height:300,
+      animations:{enabled: !REDUCED, easing:'easeinout', speed:700,
+        dynamicAnimation:{enabled:false}}}),
+    series:[{name:'Layers that fit', data: depthSeries(D), color:'#A82232'}],
+    stroke:{width:3, curve:'smooth'},
+    fill:{type:'gradient', gradient:{shadeIntensity:1, opacityFrom:.28, opacityTo:.02, stops:[0,100]}},
+    markers:{size:0, hover:{size:6}},
+    legend:{show:false},
+    xaxis:{
+      type:'numeric', min:9, max:16, tickAmount:7, decimalsInFloat:0,
+      title:{text:'vocabulary size (log scale)', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+      labels:{style:{fontFamily:MONO, fontSize:'11px', colors:'#6C6C78'},
+        formatter:v => { const n = Math.pow(2, Math.round(+v)); return n >= 1024 ? (n/1024) + 'k' : String(n); }}
+    },
+    yaxis:{min:0, tickAmount:5,
+      title:{text:'transformer layers that fit', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
+      labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => Math.round(v)}},
+    tooltip:{shared:false, intersect:false, style:{fontSize:'12.5px', fontFamily:FONT},
+      x:{formatter:v => fmt(Math.round(Math.pow(2, +v))) + ' tokens'},
+      y:{formatter:v => Math.round(v) + ' layers'}},
+    annotations:{xaxis:[depthMarker(16384)]}
   });
+  if (charts.depth){ charts.depth.destroy(); }
+  charts.depth = new ApexCharts($('chartDepth'), opts);
+  charts.depth.render();
+}
 
-  const line = (vals, py, color) => {
-    const pts = RESULTS.map((r,i)=>`${px(Math.log(r.vocab_actual)).toFixed(1)},${py(vals[i]).toFixed(1)}`).join(' ');
-    let out = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
-    RESULTS.forEach((r,i)=>{
-      out += `<circle cx="${px(Math.log(r.vocab_actual)).toFixed(1)}" cy="${py(vals[i]).toFixed(1)}" r="4.5" fill="${color}"/>`;
-    });
-    return out;
+function depthMarker(v){
+  return {
+    x: +lg(v).toFixed(4), borderColor:'#7E1620', strokeDashArray:5,
+    label:{text:fmt(v), orientation:'horizontal', borderColor:'#7E1620',
+      style:{background:'#7E1620', color:'#fff', fontSize:'11px', fontWeight:600,
+             fontFamily:MONO, padding:{left:7,right:7,top:3,bottom:3}}}
   };
-  g += line(bs, pyB, '#4FB3A5');
-  g += line(RESULTS.map(accKey), pyA, '#E8A33D');
-
-  RESULTS.forEach(r=>{
-    const cx=px(Math.log(r.vocab_actual));
-    g += `<text x="${cx.toFixed(1)}" y="${H-B+20}" fill="#8A92A8" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">${fmt(r.vocab_actual)}</text>`;
-    g += `<text x="${cx.toFixed(1)}" y="${H-B+35}" fill="#5C6478" font-size="10" font-family="IBM Plex Mono,monospace" text-anchor="middle">${r.n_layers}L</text>`;
-  });
-  g += `<text x="${L}" y="${T-8}" fill="#4FB3A5" font-size="11" font-family="IBM Plex Mono,monospace">bits/byte (lower better)</text>`;
-  g += `<text x="${W-R}" y="${T-8}" fill="#E8A33D" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="end">reasoning accuracy</text>`;
-  g += `<text x="${(L+(W-R))/2}" y="${H-4}" fill="#5C6478" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">vocabulary size (log scale) — layers shown beneath</text>`;
-  svg.innerHTML = g;
 }
 
-render(8192);
+let depthRaf = 0;
+function moveDepthMarker(v){
+  if (!charts.depth) return;
+  if (depthRaf) cancelAnimationFrame(depthRaf);
+  depthRaf = requestAnimationFrame(() => {
+    charts.depth.updateOptions({annotations:{xaxis:[depthMarker(v)]}}, false, false);
+  });
+}
+
+function buildSweepChart(view){
+  if (!RESULTS.length || typeof ApexCharts === 'undefined') return;
+  const cats = RESULTS.map(r => fmt(r.vocab_actual));
+  const layerLabels = RESULTS.map(r => r.n_layers + 'L');
+  const bpb = RESULTS.map(r => +r.bits_per_byte.toFixed(4));
+  const acc = RESULTS.map(r => +(r.reasoning_acc*100).toFixed(1));
+
+  const sBpb = {name:'Bits per byte', type:'line', data:bpb, color:'#A82232'};
+  const sAcc = {name:'Reasoning accuracy', type:'line', data:acc, color:'#C7832A'};
+  const series = view==='bpb' ? [sBpb] : view==='acc' ? [sAcc] : [sBpb, sAcc];
+
+  const yBpb = {
+    seriesName:'Bits per byte', min:1.10, max:1.25, tickAmount:5,
+    title:{text:'bits / byte — lower is better', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
+    labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(3)}
+  };
+  const yAcc = {
+    seriesName:'Reasoning accuracy', opposite: view!=='acc', min:90, max:100, tickAmount:5,
+    title:{text:'reasoning accuracy', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
+    labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)+'%'}
+  };
+
+  const opts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'line', height:360}),
+    series,
+    stroke:{width:3, curve:'straight'},
+    markers:{size:6, strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+    xaxis:{
+      categories:cats,
+      title:{text:'vocabulary size (tokens) — layer count in tooltip and table', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+      labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
+    },
+    yaxis: view==='bpb' ? [yBpb] : view==='acc' ? [yAcc] : [yBpb, yAcc],
+    annotations:{
+      xaxis:[{
+        x: fmt(16384), borderColor:'#17794E', strokeDashArray:5,
+        label:{text:'best on both', orientation:'horizontal', borderColor:'#17794E',
+          style:{background:'#17794E', color:'#fff', fontSize:'11px', fontWeight:600, padding:{left:8,right:8,top:3,bottom:3}}}
+      }]
+    },
+    tooltip: Object.assign({}, baseOpts.tooltip, {
+      y:{formatter:(v,{seriesIndex,w}) => {
+        const nm = w.config.series[seriesIndex].name;
+        return nm === 'Bits per byte' ? v.toFixed(4) + ' bits/byte' : v.toFixed(1) + '%';
+      }},
+      x:{formatter:(v,{dataPointIndex}) => v + ' tokens · ' + layerLabels[dataPointIndex]}
+    })
+  });
+
+  if (charts.sweep){ charts.sweep.destroy(); }
+  charts.sweep = new ApexCharts($('chartSweep'), opts);
+  charts.sweep.render();
+}
+
+function buildTradeChart(){
+  if (!RESULTS.length || typeof ApexCharts === 'undefined') return;
+  const cats = RESULTS.map(r => fmt(r.vocab_actual));
+  const opts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'line', height:360, stacked:false}),
+    series:[
+      {name:'Transformer layers', type:'column', data:RESULTS.map(r => r.n_layers), color:'#A82232'},
+      {name:'Bytes per token', type:'line', data:RESULTS.map(r => +r.bytes_per_token.toFixed(2)), color:'#C7832A'}
+    ],
+    stroke:{width:[0,3], curve:'straight'},
+    markers:{size:[0,6], strokeWidth:2.5, strokeColors:'#fff', hover:{size:8}},
+    plotOptions:{bar:{columnWidth:'42%', borderRadius:6, borderRadiusApplication:'end'}},
+    fill:{opacity:[0.9,1]},
+    xaxis:{
+      categories:cats,
+      title:{text:'vocabulary size', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+      labels:{style:{fontFamily:MONO, fontSize:'12px', colors:'#6C6C78'}}
+    },
+    yaxis:[
+      {seriesName:'Transformer layers', min:0, max:16, tickAmount:4,
+       title:{text:'transformer layers', style:{color:'#A82232', fontSize:'12px', fontWeight:600}},
+       labels:{style:{colors:'#A82232', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(0)}},
+      {seriesName:'Bytes per token', opposite:true, min:2.5, max:4.75, tickAmount:4,
+       title:{text:'bytes per token', style:{color:'#C7832A', fontSize:'12px', fontWeight:600}},
+       labels:{style:{colors:'#C7832A', fontFamily:MONO, fontSize:'11px'}, formatter:v => v.toFixed(2)}}
+    ]
+  });
+  if (charts.trade){ charts.trade.destroy(); }
+  charts.trade = new ApexCharts($('chartTrade'), opts);
+  charts.trade.render();
+}
+
+function buildFlagChart(){
+  if (!RESULTS.length || typeof ApexCharts === 'undefined') return;
+  const best = RESULTS.reduce((a,b) => a.bits_per_byte <= b.bits_per_byte ? a : b);
+  const worst = RESULTS.reduce((a,b) => a.bits_per_byte >= b.bits_per_byte ? a : b);
+  const opts = Object.assign({}, baseOpts, {
+    chart: Object.assign({}, baseOpts.chart, {type:'bar', height:260}),
+    colors:['#A82232'],
+    series:[{name:'Bits per byte', data:[
+      {x:'Flagship 48.9M', y:+FLAGSHIP.bits_per_byte.toFixed(4)},
+      {x:`Sweep best (${fmt(best.vocab_actual)})`, y:+best.bits_per_byte.toFixed(4)},
+      {x:`Sweep worst (${fmt(worst.vocab_actual)})`, y:+worst.bits_per_byte.toFixed(4)}
+    ]}],
+    plotOptions:{bar:{horizontal:true, barHeight:'52%', borderRadius:6, borderRadiusApplication:'end', distributed:false}},
+    dataLabels:{enabled:true, formatter:v => v.toFixed(4),
+      style:{fontFamily:MONO, fontSize:'12.5px', fontWeight:700, colors:['#fff']},
+      textAnchor:'start', offsetX:14},
+    legend:{show:false},
+    xaxis:{min:0.85, max:1.28, tickAmount:5,
+      title:{text:'bits per byte — lower is better', style:{color:'#8E8E9C', fontSize:'12px', fontWeight:500}},
+      axisBorder:{color:'#E7E7EC'}, axisTicks:{color:'#E7E7EC'},
+      labels:{style:{fontFamily:MONO, fontSize:'11px', colors:'#6C6C78'}, formatter:v => (+v).toFixed(2)}},
+    yaxis:{labels:{style:{fontFamily:FONT, fontSize:'12.5px', colors:'#3E3E47'}, minWidth:150, maxWidth:240}},
+    tooltip:{enabled:true, y:{formatter:v => v.toFixed(4) + ' bits/byte'}}
+  });
+  if (charts.flag){ charts.flag.destroy(); }
+  charts.flag = new ApexCharts($('chartFlag'), opts);
+  charts.flag.render();
+}
+
+document.querySelectorAll('#sweepMode button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#sweepMode button').forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+  buildSweepChart(b.dataset.view);
+}));
+
+/* ======================= tabs ======================= */
+(function(){
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const built = {'pnl-sweep':false, 'pnl-trade':false, 'pnl-flag':false};
+
+  function activate(tab, focus){
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const panel = $(t.getAttribute('aria-controls'));
+      panel.hidden = !on;
+    });
+    const panel = $(tab.getAttribute('aria-controls'));
+    const id = panel.id;
+    if (!built[id] && id in built){
+      built[id] = true;
+      if (id === 'pnl-sweep') buildSweepChart('both');
+      if (id === 'pnl-trade') buildTradeChart();
+      if (id === 'pnl-flag')  buildFlagChart();
+    } else {
+      // Apex measures its container on render; nudge it after an unhide.
+      window.dispatchEvent(new Event('resize'));
+    }
+    if (!REDUCED && typeof gsap !== 'undefined'){
+      gsap.fromTo(panel, {opacity:0, y:10}, {opacity:1, y:0, duration:.35, ease:'power2.out'});
+    }
+    if (focus) tab.focus();
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => activate(t)));
+  document.querySelector('[role="tablist"]').addEventListener('keydown', e => {
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    let n = null;
+    if (e.key === 'ArrowRight') n = (i+1) % tabs.length;
+    else if (e.key === 'ArrowLeft') n = (i-1+tabs.length) % tabs.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = tabs.length-1;
+    if (n !== null){ e.preventDefault(); activate(tabs[n], true); }
+  });
+})();
+
+/* ======================= CSV export ======================= */
+$('btnCsv').addEventListener('click', e => {
+  e.preventDefault();
+  if (!RESULTS.length) return;
+  const cols = Object.keys(RESULTS[0]);
+  const csv = [cols.join(',')].concat(
+    RESULTS.map(r => cols.map(c => r[c] === null ? '' : r[c]).join(','))
+  ).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'parsimony_sweep.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+/* ======================= boot + motion ======================= */
+$('vocab').value = vocabToPos(DEFAULT_VOCAB);
+render(DEFAULT_VOCAB, 'force');
 paintResults();
+
+window.addEventListener('load', () => {
+  buildDepthChart();
+  render(currentVocab);
+});
+
+if (typeof gsap !== 'undefined' && !REDUCED){
+  gsap.registerPlugin(ScrollTrigger);
+
+  // containers hold their own opacity; only their children are staggered
+  gsap.set(['[data-rv="hero"]', '[data-rv="kpi"]'], {opacity:1});
+
+  // masthead + hero on load
+  gsap.timeline({defaults:{ease:'power2.out'}})
+    .fromTo('[data-rv="top"]',  {opacity:0, y:-10}, {opacity:1, y:0, duration:.45})
+    .fromTo('[data-rv="hero"] > *', {opacity:0, y:18}, {opacity:1, y:0, duration:.5, stagger:.07}, '-=.2')
+    .fromTo('[data-rv="ctrl"]', {opacity:0, y:20}, {opacity:1, y:0, duration:.5}, '-=.3')
+    .fromTo('[data-rv="ins"]',  {opacity:0, y:14}, {opacity:1, y:0, duration:.4}, '-=.32');
+
+  // KPI cards stagger in on scroll
+  gsap.fromTo('[data-rv="kpi"] .kpi', {opacity:0, y:16, scale:.96},
+    {opacity:1, y:0, scale:1, duration:.4, stagger:.06, ease:'back.out(1.4)',
+     scrollTrigger:{trigger:'[data-rv="kpi"]', start:'top 92%'}});
+
+  // tab bar + first panel
+  gsap.fromTo('[data-rv="tabs"]', {opacity:0, y:14}, {opacity:1, y:0, duration:.4,
+    scrollTrigger:{trigger:'[data-rv="tabs"]', start:'top 94%'}});
+  gsap.fromTo('#pnl-alloc', {opacity:0, y:18}, {opacity:1, y:0, duration:.45,
+    scrollTrigger:{trigger:'#pnl-alloc', start:'top 92%'}});
+
+  // count the KPI numbers up once, on first reveal
+  ScrollTrigger.create({
+    trigger:'[data-rv="kpi"]', start:'top 92%', once:true,
+    onEnter(){
+      const s = solveShape(currentVocab, BUDGET, D);
+      const o = {t:0, l:0, f:0};
+      gsap.to(o, {t:s.total, l:s.layers, f:s.frac*100, duration:1.1, ease:'power2.out',
+        onUpdate(){
+          $('rTotal').innerHTML = m2(o.t) + ' <small>/ 50M</small>';
+          $('rLayers').textContent = Math.round(o.l);
+          $('rFrac').textContent = o.f.toFixed(1) + '%';
+        },
+        onComplete(){ render(currentVocab); }
+      });
+    }
+  });
+} else {
+  document.querySelectorAll('.reveal').forEach(el => el.style.opacity = 1);
+}
+
+/* Failsafe: content must never stay invisible because an animation stalled,
+   a CDN was blocked, or a tick was dropped. Anything sitting at zero opacity
+   while inside the viewport gets revealed; elements still below the fold keep
+   their scroll animation. */
+function rescueHidden(){
+  const vh = window.innerHeight || 0;
+  document.querySelectorAll('.reveal, [data-rv="hero"] > *, .panel, .kpi').forEach(el => {
+    if (el.hidden || getComputedStyle(el).opacity !== '0') return;
+    const r = el.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < vh) el.style.opacity = 1;
+  });
+}
+setTimeout(rescueHidden, 2500);
+window.addEventListener('scroll', () => {
+  clearTimeout(window.__rescueT);
+  window.__rescueT = setTimeout(rescueHidden, 1200);
+}, {passive:true});
 </script>
 
 </body>
