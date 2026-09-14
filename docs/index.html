@@ -158,10 +158,11 @@ footer{margin:76px 0 60px; padding-top:22px; border-top:1px solid var(--line);
     So we measured which is actually better &mdash; and the answer splits in two.
   </p>
   <p class="thesis" style="margin-top:14px">
-    <strong>Depth buys compression; vocabulary buys reasoning</strong> &mdash; and at a fixed 50M
-    budget they pull against each other. Neither extreme wins. In our sweep the best model spends
-    about <strong>a third of the budget on embeddings</strong>, keeping 84% of the best compression
-    while topping the reasoning score. The lookup table is not waste, and it is not free.
+    <strong>Compression and reasoning don't trade off &mdash; at this scale, on real text, they
+    agree.</strong> In our sweep the best model spends <strong>over a third of the budget on
+    embeddings</strong> and has both the lowest bits&#8209;per&#8209;byte and the top reasoning
+    score of every configuration tested. The lookup table isn't waste. It's the highest-leverage
+    use of the budget, at least up to the point our sweep could reach.
   </p>
 </header>
 
