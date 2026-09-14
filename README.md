@@ -178,6 +178,53 @@ The reasoning traces are generated procedurally (`src/data.py`) over a 56,990-wo
 large BPE vocabulary of the frequent word types it exists to capture, which would have rigged
 the entire vocabulary study.
 
+## Evaluation
+
+The bits-per-byte and reasoning-accuracy numbers above are our own metrics, chosen because they're
+tokenizer-invariant and this project's central question is a tokenizer/vocabulary tradeoff (see
+"The metric" above). They are not a substitute for the track's required benchmarks, so those are
+run separately, through the standard harness, on the flagship checkpoint:
+
+| Benchmark | Via | Type |
+|---|---|---|
+| HellaSwag | [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) | 0-shot, loglikelihood |
+| ARC-Easy | lm-evaluation-harness | 0-shot, loglikelihood |
+| PIQA | lm-evaluation-harness | 0-shot, loglikelihood |
+| WinoGrande | lm-evaluation-harness | 0-shot, loglikelihood |
+| WikiText-103 perplexity | lm-evaluation-harness (custom `wikitext103` task, test split) | loglikelihood-rolling |
+
+`eval/lm_eval_adapter.py` is what makes this possible: Parsimony is a plain `nn.Module`, not a
+Hugging Face `PreTrainedModel`, so it doesn't fit the harness's built-in model wrapper. The adapter
+implements the harness's three-method model interface (`loglikelihood`, `loglikelihood_rolling`,
+`generate_until`) directly against `src/model.py`, so all five tasks above run through the
+harness's own scoring code — not a reimplementation of it. `eval/tasks/wikitext103/` is a small
+custom task config (WikiText-103 has no first-class task in this harness version; it's the
+harness's own `wikitext` task pointed at the 103 dataset config instead of the default 2). Adapter
+correctness — that its log-likelihoods match an independent brute-force computation, that batching
+doesn't change results, that the WikiText-103 windowing is byte-for-byte the harness's own
+`get_rolling_token_windows` — is checked in `eval/test_adapter.py` against a synthetic checkpoint
+(CPU-only, runs in seconds; the real checkpoint only exists where it was trained, see below).
+
+Run it with:
+
+```bash
+pip install lm-eval
+python eval/run_harness_eval.py --checkpoint runs/flagship/ckpt.pt --out results/harness_eval.json
+```
+
+**Results:** *pending* — the flagship checkpoint lives only on Kaggle (the training GPU, per
+"Compute and hardware" below), so this is run as the final cell of
+`notebooks/parsimony_train.ipynb` rather than from a git checkout. Numbers land in
+`results/harness_eval.json` and get pasted into the table below once that run completes.
+
+| Task | Metric | Score |
+|---|---|---|
+| HellaSwag | acc_norm | — |
+| ARC-Easy | acc_norm | — |
+| PIQA | acc_norm | — |
+| WinoGrande | acc | — |
+| WikiText-103 | bits_per_byte | — |
+
 ## Reproducing
 
 ```bash
@@ -186,10 +233,12 @@ pip install torch tokenizers datasets
 python scripts/verify_params.py          # parameter-count verification (required by rules)
 python src/param_budget.py               # the allocation table
 python scripts/run_ablation.py           # CPU pilot, ~20 min
+python eval/test_adapter.py              # lm-eval adapter correctness check, CPU-only
 ```
 
 For the flagship run, open `notebooks/parsimony_train.ipynb` on Kaggle with a T4 and run the
-stages in order. Every stage checkpoints and resumes.
+stages in order. Every stage checkpoints and resumes. The final cell runs the harness evaluation
+above against the resulting checkpoint.
 
 ## Compute and hardware
 
@@ -226,6 +275,10 @@ stages in order. Every stage checkpoints and resumes.
 - No pretrained weights, no distillation, no fine-tuning — per Track 01 rules. Absolute quality
   is therefore far below any model you would actually deploy; the comparison between rows is
   the result, not the rows themselves.
+- The standard-benchmark evaluation (HellaSwag / ARC-Easy / PIQA / WinoGrande / WikiText-103, see
+  "Evaluation" above) is wired up and adapter-tested, but the numbers in that section are pending
+  a run against the real flagship checkpoint on Kaggle — this README will be updated with real
+  scores before the submission deadline.
 
 ## Repository
 

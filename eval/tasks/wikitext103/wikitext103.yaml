@@ -1,0 +1,33 @@
+# Custom lm-evaluation-harness task: WikiText-103 perplexity on the test split.
+#
+# This is lm_eval's own built-in `wikitext` task (see
+# lm_eval/tasks/wikitext/wikitext.yaml in the installed `lm-eval` package)
+# with `dataset_name` pointed at the 103 config instead of the default
+# wikitext-2 one -- everything else (the document-level dataset, the
+# detokenizer, the metrics) is identical, so results are directly
+# comparable to anyone else's `wikitext` numbers from the same harness.
+# `preprocess_wikitext.py` here is an unmodified copy of the installed
+# package's version (credited above), copied rather than imported so this
+# task config works from a plain checkout without depending on lm_eval's
+# internal package layout.
+#
+# `test_split: test` + lm_eval's default of preferring the test split when
+# one exists is what makes this "a held-out slice" per the rubric.
+task: wikitext103
+dataset_path: EleutherAI/wikitext_document_level
+dataset_name: wikitext-103-raw-v1
+output_type: loglikelihood_rolling
+training_split: train
+validation_split: validation
+test_split: test
+doc_to_text: ""
+doc_to_target: !function preprocess_wikitext.wikitext_detokenizer
+process_results: !function preprocess_wikitext.process_results
+should_decontaminate: true
+doc_to_decontamination_query: "{{page}}"
+metric_list:
+  - metric: word_perplexity
+  - metric: byte_perplexity
+  - metric: bits_per_byte
+metadata:
+  version: 2.0
