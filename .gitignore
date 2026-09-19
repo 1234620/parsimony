@@ -5,3 +5,6 @@ data/tokens_*.npy
 data/train.txt
 data/holdout.txt
 *.pt
+
+# /brag video build workspace — the two shipped assets live in docs/
+brag-output/

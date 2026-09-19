@@ -1,12 +1,42 @@
-# Parsimony
+<div align="center">
+
+<a href="https://1234620.github.io/parsimony/">
+  <img src="docs/banner.svg" width="100%"
+       alt="Parsimony — five 50-million-parameter budgets at d_model 512. As the vocabulary grows from 4,096 to 50,257 tokens the embedding table takes 4.3%, 8.8%, 17.2%, 35.0% and 54.1% of the budget, and the transformer layers that fit drop from 15 to 14, 13, 10 and 7.">
+</a>
+
+[![params 48.87M of a 50M cap](https://img.shields.io/badge/params-48.87M%20%2F%2050M%20cap-7E1620?style=flat-square)](#results--flagship-50m-parameters-gpu-real-text)
+[![bits per byte 0.9416](https://img.shields.io/badge/bits%2Fbyte-0.9416-17794E?style=flat-square)](#the-metric-bits-per-byte-not-perplexity)
+[![reasoning accuracy 99 percent](https://img.shields.io/badge/reasoning-99%25-17794E?style=flat-square)](#results--flagship-50m-parameters-gpu-real-text)
+[![vocabulary 16,384 tokens](https://img.shields.io/badge/vocabulary-16%2C384%20tokens-C7832A?style=flat-square)](#results--gpu-sweep-12m-parameter-budget-real-text)
+[![pretrained weights: none](https://img.shields.io/badge/pretrained%20weights-none-6C6C78?style=flat-square)](#honest-limitations)
+[![PyTorch 2.1+](https://img.shields.io/badge/PyTorch-2.1%2B-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](requirements.txt)
+[![MIT license](https://img.shields.io/badge/license-MIT-6C6C78?style=flat-square)](LICENSE)
 
 **Where should a 50-million-parameter budget go?**
 
 A from-scratch small language model for [GIBC V2](https://gibc-v2.devpost.com/) Track 01,
 built around a single question the competition rules force you to answer.
-for frontend demo: https://1234620.github.io/parsimony/
 
-**Live demo:** https://1234620.github.io/parsimony/ &nbsp;·&nbsp; **Repo:** https://github.com/1234620/parsimony
+**[Live demo](https://1234620.github.io/parsimony/)**
+&nbsp;·&nbsp; **[The question](#the-question)**
+&nbsp;·&nbsp; **[Results](#results--flagship-50m-parameters-gpu-real-text)**
+&nbsp;·&nbsp; **[Reproducing](#reproducing)**
+&nbsp;·&nbsp; **[Honest limitations](#honest-limitations)**
+
+<a href="https://github.com/1234620/parsimony/raw/main/docs/parsimony.mp4">
+  <img src="docs/parsimony-poster.jpg" width="100%"
+       alt="The budget allocator at a 16,384-token vocabulary: 48.87M parameters, 13 transformer layers, 17.2% of the budget spent on embeddings. Click to play the 22-second walkthrough.">
+</a>
+
+**[▶ Watch the 22-second walkthrough](https://github.com/1234620/parsimony/raw/main/docs/parsimony.mp4)**
+&nbsp;(with sound)
+
+<sub>The budget allocator moved off GPT-2's vocabulary onto the one the sweep selected —
+7 transformer layers becoming 13, without crossing the cap.
+Drive it yourself in the <a href="https://1234620.github.io/parsimony/">live demo</a>.</sub>
+
+</div>
 
 ---
 
